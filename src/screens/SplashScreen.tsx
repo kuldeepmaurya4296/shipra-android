@@ -1,0 +1,158 @@
+import React, { useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import { colors } from '../theme/colors';
+
+const { width } = Dimensions.get('window');
+
+interface SplashScreenProps {
+    onNext: () => void;
+}
+
+export default function SplashScreen({ onNext }: SplashScreenProps) {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(20)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.loop(
+                Animated.timing(rotateAnim, {
+                    toValue: 1,
+                    duration: 8000,
+                    useNativeDriver: true,
+                })
+            ),
+        ]).start();
+    }, []);
+
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
+    return (
+        <LinearGradient
+            colors={[colors.primary, colors.secondary]}
+            style={styles.container}
+        >
+            <View style={styles.content}>
+                <Animated.View style={[styles.logoContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                    <Animated.View style={[styles.logoCircle, { transform: [{ rotate: spin }] }]}>
+                        <Text style={styles.logoIcon}>✈</Text>
+                    </Animated.View>
+                </Animated.View>
+
+                <Animated.Text style={[styles.title, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                    Shipra
+                </Animated.Text>
+
+                <Animated.Text style={[styles.subtitle, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                    Future of Air Mobility
+                </Animated.Text>
+
+                <View style={styles.dots}>
+                    {[0, 1, 2].map((i) => (
+                        <View key={i} style={styles.dot} />
+                    ))}
+                </View>
+
+                <Animated.View style={{ width: '100%', opacity: fadeAnim }}>
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={onNext}
+                        activeOpacity={0.9}
+                    >
+                        <Text style={styles.buttonText}>Get Started</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            </View>
+        </LinearGradient>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    content: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+        width: '100%',
+    },
+    logoContainer: {
+        marginBottom: 48,
+    },
+    logoCircle: {
+        width: 96,
+        height: 96,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
+    logoIcon: {
+        fontSize: 40,
+        color: '#fff',
+    },
+    title: {
+        fontSize: 48,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 20,
+        color: 'rgba(255,255,255,0.8)',
+        textAlign: 'center',
+        marginBottom: 64,
+        fontWeight: '300',
+        letterSpacing: 1,
+    },
+    dots: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 96,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: colors.accent,
+    },
+    button: {
+        width: '100%',
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        backgroundColor: colors.accent,
+        borderRadius: 50,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    buttonText: {
+        color: colors.accentForeground,
+        fontSize: 18,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+});
