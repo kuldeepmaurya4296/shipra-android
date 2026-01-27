@@ -1,31 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock } from 'lucide-react-native';
+import { User, Mail, Lock, ArrowLeft } from 'lucide-react-native';
 
-type Props = StackScreenProps<RootStackParamList, 'Login'>;
+type Props = StackScreenProps<RootStackParamList, 'Register'>;
 
-export default function LoginScreen({ navigation }: Props) {
-    const { login } = useAuth();
+export default function RegisterScreen({ navigation }: Props) {
+    const { register } = useAuth();
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password');
+    const handleRegister = async () => {
+        if (!name || !email || !password) {
+            Alert.alert('Error', 'Please fill in all fields');
             return;
         }
 
         setLoading(true);
         try {
-            await login(email, password);
+            await register(name, email, password);
+            // Navigation is handled by AuthContext redirect in App.tsx
         } catch (error: any) {
-            const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
+            const message = error.response?.data?.message || 'Registration failed. Please try again.';
             Alert.alert('Error', message);
         } finally {
             setLoading(false);
@@ -42,17 +44,31 @@ export default function LoginScreen({ navigation }: Props) {
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={{ flex: 1 }}
                 >
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <ArrowLeft size={24} color={colors.foreground} />
+                    </TouchableOpacity>
+
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={styles.header}>
-                            <Text style={styles.title}>Welcome Back</Text>
-                            <Text style={styles.subtitle}>Sign in to continue your journey</Text>
-                        </View>
-
-                        <View style={styles.illustrationContainer}>
-                            <Text style={styles.illustrationEmoji}>✈️</Text>
+                            <Text style={styles.title}>Create Account</Text>
+                            <Text style={styles.subtitle}>Join Shipra for premium air travel</Text>
                         </View>
 
                         <View style={styles.form}>
+                            <View style={styles.inputContainer}>
+                                <User size={20} color={colors.mutedForeground} style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Full Name"
+                                    value={name}
+                                    onChangeText={setName}
+                                    placeholderTextColor={colors.mutedForeground}
+                                />
+                            </View>
+
                             <View style={styles.inputContainer}>
                                 <Mail size={20} color={colors.mutedForeground} style={styles.inputIcon} />
                                 <TextInput
@@ -60,8 +76,8 @@ export default function LoginScreen({ navigation }: Props) {
                                     placeholder="Email Address"
                                     value={email}
                                     onChangeText={setEmail}
-                                    autoCapitalize="none"
                                     keyboardType="email-address"
+                                    autoCapitalize="none"
                                     placeholderTextColor={colors.mutedForeground}
                                 />
                             </View>
@@ -79,39 +95,22 @@ export default function LoginScreen({ navigation }: Props) {
                             </View>
 
                             <TouchableOpacity
-                                style={[styles.loginButton, loading && styles.disabledButton]}
-                                onPress={handleLogin}
+                                style={styles.registerButton}
+                                onPress={handleRegister}
                                 disabled={loading}
                             >
                                 {loading ? (
-                                    <ActivityIndicator color="#fff" />
+                                    <ActivityIndicator color={colors.primaryForeground} />
                                 ) : (
-                                    <Text style={styles.loginButtonText}>Login</Text>
+                                    <Text style={styles.registerButtonText}>Sign Up</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
 
-                        <View style={styles.socialSeparator}>
-                            <View style={styles.separatorLine} />
-                            <Text style={styles.separatorText}>OR CONTINUE WITH</Text>
-                            <View style={styles.separatorLine} />
-                        </View>
-
-                        <View style={styles.socialButtons}>
-                            <TouchableOpacity style={styles.socialButton}>
-                                <Text style={styles.buttonEmoji}>🔤</Text>
-                                <Text style={styles.socialButtonText}>Google</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.socialButton}>
-                                <Text style={styles.buttonEmoji}>💬</Text>
-                                <Text style={styles.socialButtonText}>WhatsApp</Text>
-                            </TouchableOpacity>
-                        </View>
-
                         <View style={styles.footer}>
-                            <Text style={styles.footerText}>Don't have an account? </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                                <Text style={styles.linkText}>Register</Text>
+                            <Text style={styles.footerText}>Already have an account? </Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                                <Text style={styles.linkText}>Login</Text>
                             </TouchableOpacity>
                         </View>
                     </ScrollView>
@@ -128,12 +127,15 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
     },
+    backButton: {
+        padding: 16,
+        marginLeft: 8,
+    },
     scrollContent: {
         padding: 24,
-        paddingBottom: 40,
+        paddingTop: 8,
     },
     header: {
-        marginTop: 40,
         marginBottom: 32,
     },
     title: {
@@ -145,19 +147,6 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 16,
         color: colors.mutedForeground,
-    },
-    illustrationContainer: {
-        height: 120,
-        backgroundColor: 'rgba(79, 70, 229, 0.1)',
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 32,
-        borderWidth: 1,
-        borderColor: 'rgba(79, 70, 229, 0.2)',
-    },
-    illustrationEmoji: {
-        fontSize: 48,
     },
     form: {
         gap: 16,
@@ -180,72 +169,28 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: colors.foreground,
     },
-    loginButton: {
+    registerButton: {
         backgroundColor: colors.primary,
         height: 56,
         borderRadius: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 8,
+        marginTop: 16,
         shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 4,
     },
-    disabledButton: {
-        opacity: 0.7,
-    },
-    loginButtonText: {
-        color: '#fff',
+    registerButtonText: {
+        color: colors.primaryForeground,
         fontSize: 16,
         fontWeight: 'bold',
-    },
-    socialSeparator: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 32,
-        gap: 12,
-    },
-    separatorLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: colors.border,
-    },
-    separatorText: {
-        fontSize: 10,
-        color: colors.mutedForeground,
-        fontWeight: '600',
-        letterSpacing: 1,
-    },
-    socialButtons: {
-        flexDirection: 'row',
-        gap: 16,
-    },
-    socialButton: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 12,
-        height: 48,
-        gap: 8,
-    },
-    buttonEmoji: {
-        fontSize: 16,
-    },
-    socialButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.foreground,
     },
     footer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginTop: 40,
+        marginTop: 32,
     },
     footerText: {
         color: colors.mutedForeground,

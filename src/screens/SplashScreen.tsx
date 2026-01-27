@@ -5,11 +5,12 @@ import { colors } from '../theme/colors';
 
 const { width } = Dimensions.get('window');
 
-interface SplashScreenProps {
-    onNext: () => void;
-}
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '../../App';
 
-export default function SplashScreen({ onNext }: SplashScreenProps) {
+type Props = StackScreenProps<RootStackParamList, 'Splash'>;
+
+export default function SplashScreen({ navigation }: Props) {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(20)).current;
     const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -70,7 +71,7 @@ export default function SplashScreen({ onNext }: SplashScreenProps) {
                 <Animated.View style={{ width: '100%', opacity: fadeAnim }}>
                     <TouchableOpacity
                         style={styles.button}
-                        onPress={onNext}
+                        onPress={() => navigation.navigate('Login')}
                         activeOpacity={0.9}
                     >
                         <Text style={styles.buttonText}>Get Started</Text>

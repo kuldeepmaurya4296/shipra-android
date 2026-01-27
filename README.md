@@ -1,120 +1,49 @@
-# ShipraApp
+# ShipraApp ✈️
 
 ## 📱 Application Overview
-ShipraApp is a modern mobile application built with **React Native** and **TypeScript**. It provides a seamless user experience for booking and managing services. The application currently features a custom navigation system and a polished UI using vector graphics and linear gradients.
+ShipraApp is a premium mobile application built with **React Native** and **TypeScript**. It offers a high-end flight booking experience with a sleek, modern UI. The app is fully integrated with a Node.js/Express backend and MongoDB Atlas.
 
 ---
 
-## 🛠 Tech Stack
+## ✅ Progress & Task Status
 
-### Current Stack (Frontend)
-- **Framework**: React Native (v0.83.1)
+### **Phase 1: Foundation (Completed)**
+- [x] Initial React Native & TypeScript Setup
+- [x] Custom Navigation System (Integrated and tested)
+- [x] Themed UI System (Colors, Typography, Gradients)
+- [x] Vector Iconography (Lucide-react integration)
+
+### **Phase 2: Full-Stack Integration (Completed)**
+- [x] **Backend Server**: Node.js & Express.js architecture
+- [x] **Database**: MongoDB Atlas cloud integration
+- [x] **Authentication**: Secure Login & Registration with JWT
+- [x] **User Management**: Profile viewing and updates
+- [x] **Booking System**: Create and store flight bookings
+- [x] **History Tracking**: Fetch and display historical trips from DB
+
+### **Phase 3: Advanced Features (Next)**
+- [ ] **Payment Integration**: Live Razorpay gateway (currently simulated)
+- [ ] **Push Notifications**: Firebase Cloud Messaging (FCM)
+- [ ] **Live Maps**: Interactive route visualization via Google Maps
+- [ ] **Real-time Status**: Live flight tracking updates
+
+---
+
+## 🛠 Tech Stack (Current)
+
+### Frontend
+- **Framework**: React Native (v0.73.1)
 - **Language**: TypeScript
-- **UI & Styling**:
-  - `react-native-linear-gradient` (Gradient backgrounds)
-  - `react-native-svg` (Vector graphics)
-  - `lucide-react-native` (Iconography)
-- **Navigation**: Custom State-based Navigation (Lightweight, non-library approach)
-- **State Management**: React Hooks (`useState`)
+- **Styling**: `react-native-linear-gradient`, `Native Styles`
+- **Icons**: `lucide-react-native`
+- **Storage**: `AsyncStorage` for session persistence
 
-### Future Stack (Backend & Infrastructure)
-- **Backend Runtime**: Node.js
+### Backend & Infrastructure
+- **Runtime**: Node.js (v20+)
 - **Framework**: Express.js
-- **Database**: MongoDB Atlas (Cloud Database)
-- **Authentication**: JWT (JSON Web Tokens) or OAuth 2.0
-- **API Architecture**: RESTful APIs
-
----
-
-## 💻 System Configuration & Requirements (Windows)
-
-To successfully run and develop this application, your system must meet the following requirements:
-
-### Hardware
-- **OS**: Windows 10 or 11 (64-bit)
-- **RAM**: Minimum 8GB (16GB recommended for running Emulators smoothly)
-- **Disk Space**: At least 10GB free space (for Android Studio, SDKs, and Node modules)
-- **Virtualization**: Enabled in BIOS (VT-x or AMD-V) for Android Emulator support.
-
-### Software Prerequisites
-1.  **Node.js**: LTS Version (v20.x or newer recommended).
-2.  **Java Development Kit (JDK)**: OpenJDK 17 (Required for React Native 0.73+).
-3.  **Android Studio**: Latest Stable Version (Koala or newer).
-
----
-
-## ⚙️ Development Environment Setup (Detailed)
-
-Follow these steps strictly to configure your environment for Android development.
-
-### 1. Install Dependencies
-- **Node.js**: Download and install from [nodejs.org](https://nodejs.org/).
-- **JDK 17**: Recommend using Chocolatey or downloading Microsoft Build of OpenJDK.
-  ```powershell
-  # If using Chocolatey
-  choco install -y openjdk17
-  ```
-
-### 2. Android Studio Configuration
-Download and install Android Studio. During installation, ensure the following components are selected:
-- **Android SDK**
-- **Android SDK Platform**
-- **Android Virtual Device**
-
-#### SDK Manager Setup
-Open Android Studio -> **Settings** -> **Languages & Frameworks** -> **Android SDK**:
-
-**Include the following SDK Platforms:**
-- [x] Android 14.0 ("UpsideDownCake") (API Level 34)
-- [x] Android 15.0 ("VanillaIceCream") (API Level 35) (Optional, but good for future proofing)
-
-**Include the following SDK Tools:**
-- [x] **Android SDK Build-Tools** (Expand and select `34.0.0` or `35.0.0`)
-- [x] **Android SDK Command-line Tools (latest)**
-- [x] **Android Emulator**
-- [x] **Android SDK Platform-Tools**
-
-### 3. Environment Variables (Critical)
-You must set these User Environment Variables for the build tools to find the SDK.
-
-1.  Open **Edit the system environment variables**.
-2.  Click **Environment Variables...**.
-3.  Under **User variables**:
-    -   **New Variable**: `ANDROID_HOME`
-    -   **Value**: `%LOCALAPPDATA%\Android\Sdk` (Typically: `C:\Users\YOUR_USERNAME\AppData\Local\Android\Sdk`)
-4.  Under **User variables** -> select **Path** -> **Edit**:
-    -   Add: `%ANDROID_HOME%\platform-tools`
-    -   Add: `%ANDROID_HOME%\emulator`
-    -   Add: `%ANDROID_HOME%\cmdline-tools\latest\bin` (if available)
-
-### 4. Setup Java Home
-1.  Under **System variables**:
-    -   **New Variable**: `JAVA_HOME`
-    -   **Value**: Path to your JDK installation (e.g., `C:\Program Files\Microsoft\jdk-17.0.x.x`)
-
----
-
-## 🚀 Running the Application
-
-### 1. Installation
-Install the project dependencies using npm:
-```bash
-npm install
-```
-
-### 2. Start Metro Bundler
-Start the JavaScript bundler in a dedicated terminal:
-```bash
-npm start
-```
-
-### 3. Run on Android
-Launch the application on a connected device or emulator:
-```bash
-npm run android
-```
-
-> **Note**: Ensure an Android Emulator is running OR a physical device is connected with "USB Debugging" enabled.
+- **Database**: MongoDB Atlas
+- **Authentication**: JWT (JSON Web Tokens)
+- **Environment**: `.env` (Unified across project)
 
 ---
 
@@ -122,14 +51,42 @@ npm run android
 
 ```
 ShipraApp/
-├── android/            # Native Android project files
-├── ios/                # Native iOS project files
-├── src/
-│   ├── components/     # Reusable UI components (NavigationBar, etc.)
-│   ├── screens/        # Application screens (Splash, Login, Home)
-│   └── assets/         # Static assets (images, fonts)
+├── server/             # Express.js Backend
+│   ├── src/
+│   │   ├── routes/     # Auth, Bookings, Users
+│   │   ├── models/     # Mongoose Schemas
+│   │   └── middleware/ # Auth validation
+├── src/                # React Native Frontend
+│   ├── api/            # Axios client configuration
+│   ├── components/     # Reusable UI (NavigationBar, etc.)
+│   ├── context/        # Auth State Management
+│   ├── screens/        # UI Screens (Splash, Home, Booking, History, Profile)
+│   └── theme/          # Color tokens and design system
 ├── App.tsx             # Main entry point & Navigation logic
-├── package.json        # Dependencies and scripts
-└── README.md           # Project documentation
+└── .env                # Global configuration (Shared)
 ```
-"# shipra-android" 
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- Node.js LTS
+- Android Studio / Xcode
+- Java 17
+
+### 2. Setup
+1. Clone the repository.
+2. Install dependencies: `npm install` and `cd server && npm install`.
+3. Configure `.env` with your `MONGODB_URI` and `API_URL`.
+4. Run the backend: `cd server && node index.js`.
+5. Run the mobile app: `npm run android` or `npm run ios`.
+
+---
+
+## 💻 Development Notes
+- **API URL**: For Android Emulators, use `http://10.0.2.2:5000/api`.
+- **Database**: Ensure your IP is whitelisted in MongoDB Atlas.
+
+"# shipra-android"
+ 
