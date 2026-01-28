@@ -13,18 +13,18 @@ const Booking = require('./src/models/Booking');
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const stations = [
-    { name: 'Downtown Skyport', code: 'DTN', city: 'Metropolis', country: 'India' },
-    { name: 'Tech Hub Vertiport', code: 'TECH', city: 'Metropolis', country: 'India' },
-    { name: 'Coastal Bay Deck', code: 'BAY', city: 'Metropolis', country: 'India' },
-    { name: 'Highland Terminal', code: 'HIGH', city: 'Metropolis', country: 'India' },
-    { name: 'Central Station', code: 'CEN', city: 'Metropolis', country: 'India' }
+    { name: 'Downtown Skyport', code: 'DTN', city: 'Metropolis', country: 'India', location: { lat: 28.6139, lng: 77.2090 } }, // New Delhi
+    { name: 'Tech Hub Vertiport', code: 'TECH', city: 'Metropolis', country: 'India', location: { lat: 28.4595, lng: 77.0266 } }, // Gurgaon
+    { name: 'Coastal Bay Deck', code: 'BAY', city: 'Metropolis', country: 'India', location: { lat: 28.5355, lng: 77.3910 } }, // Noida
+    { name: 'Highland Terminal', code: 'HIGH', city: 'Metropolis', country: 'India', location: { lat: 28.7041, lng: 77.1025 } }, // North Delhi
+    { name: 'Central Station', code: 'CEN', city: 'Metropolis', country: 'India', location: { lat: 28.6448, lng: 77.2167 } } // Central Delhi
 ];
 
 const birds = [
-    { name: 'SkyGlider X1', model: 'eVTOL-X1', capacity: 4, range: '400km', status: 'active' },
-    { name: 'UrbanHawk 5', model: 'eVTOL-UH5', capacity: 6, range: '600km', status: 'active' },
-    { name: 'Falcon Electric', model: 'eVTOL-FE', capacity: 4, range: '550km', status: 'active' },
-    { name: 'VoloCity Air', model: 'VC-200', capacity: 2, range: '300km', status: 'maintenance' }
+    { name: 'SkyGlider X1', model: 'eVTOL-X1', capacity: 4, range: '400km', status: 'active', location: { lat: 28.6200, lng: 77.2100 } },
+    { name: 'UrbanHawk 5', model: 'eVTOL-UH5', capacity: 6, range: '600km', status: 'active', location: { lat: 28.4600, lng: 77.0300 } },
+    { name: 'Falcon Electric', model: 'eVTOL-FE', capacity: 4, range: '550km', status: 'active', location: { lat: 28.5400, lng: 77.3950 } },
+    { name: 'VoloCity Air', model: 'VC-200', capacity: 2, range: '300km', status: 'maintenance', location: { lat: 28.6500, lng: 77.2200 } }
 ];
 
 const seedDB = async () => {

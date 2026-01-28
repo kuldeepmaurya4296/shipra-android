@@ -50,13 +50,8 @@ export default function BookingScreen({ route, navigation }: Props) {
                 birdId: selectedBird._id
             };
 
-            await client.post('/bookings', bookingData);
-
-            Alert.alert(
-                'Success',
-                'Your flight has been booked successfully!',
-                [{ text: 'View History', onPress: () => navigation.navigate('History') }]
-            );
+            const response = await client.post('/bookings', bookingData);
+            navigation.navigate('RideStatus', { bookingId: response.data._id });
         } catch (error: any) {
             console.error('Booking failed', error);
             Alert.alert('Error', 'Failed to confirm booking. Please try again.');

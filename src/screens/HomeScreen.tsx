@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, TextInput, Alert } from 'react-native';
-import { MapPin, Zap, PlaneTakeoff, PlaneLanding, Search } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, TextInput, Alert, Dimensions } from 'react-native';
+import { MapPin, Zap, PlaneTakeoff, PlaneLanding, Search, Navigation as NavigationIcon, LocateFixed } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import NavigationBar from '../components/NavigationBar';
+import client from '../api/client';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
@@ -15,7 +17,18 @@ export default function HomeScreen({ navigation }: Props) {
     const [fromLocation, setFromLocation] = useState('Downtown Airport');
     const [toLocation, setToLocation] = useState('');
     const [stations, setStations] = useState<any[]>([]);
+    const [birds, setBirds] = useState<any[]>([]);
     const [loadingStations, setLoadingStations] = useState(true);
+
+    // Default region (New Delhi approximate)
+    const [region, setRegion] = useState({
+        latitude: 28.6139,
+        longitude: 77.2090,
+        latitudeDelta: 0.2,
+        longitudeDelta: 0.2,
+    });
+
+    const mapRef = useRef<MapView>(null);
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
@@ -24,20 +37,19 @@ export default function HomeScreen({ navigation }: Props) {
             useNativeDriver: true,
         }).start();
 
-        fetchStations();
+        fetchData();
     }, []);
 
-    const fetchStations = async () => {
+    const fetchData = async () => {
         try {
-            // Need to import client here if not available, assuming it will be available via direct import or I add it
-            // Since client is in ../api/client, I need to import it.
-            // But I can't add imports with this tool easily in the middle of file without context. 
-            // I'll assume I can add the import at the top first.
-            const response = await fetch('http://10.0.2.2:5000/api/stations');
-            const data = await response.json();
-            setStations(data);
+            const [stationsRes, birdsRes] = await Promise.all([
+                client.get('/stations'),
+                client.get('/birds')
+            ]);
+            setStations(stationsRes.data);
+            setBirds(birdsRes.data);
         } catch (error) {
-            console.error('Failed to fetch stations', error);
+            console.error('Failed to fetch data', error);
         } finally {
             setLoadingStations(false);
         }
@@ -49,6 +61,24 @@ export default function HomeScreen({ navigation }: Props) {
             return;
         }
         navigation.navigate('Booking', { from: fromLocation, to: toLocation });
+    };
+
+    const handleCheckNearbyBirds = () => {
+        if (birds.length > 0 && mapRef.current) {
+            // Calculate bounding box for all birds
+            const coords = birds.map(b => ({
+                latitude: b.location ? b.location.lat : 28.6139,
+                longitude: b.location ? b.location.lng : 77.2090
+            }));
+
+            mapRef.current.fitToCoordinates(coords, {
+                edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+                animated: true,
+            });
+            Alert.alert('Nearby Birds', `Found ${birds.length} active birds in your area.`);
+        } else {
+            Alert.alert('No Birds Found', 'No active birds available nearby.');
+        }
     };
 
     return (
@@ -134,26 +164,60 @@ export default function HomeScreen({ navigation }: Props) {
                     </TouchableOpacity>
                 </Animated.View>
 
-                {/* Map Visualization Placeholder */}
+                {/* Map Visualization */}
                 <Animated.View style={[styles.mapCard, { opacity: fadeAnim }]}>
-                    <LinearGradient
-                        colors={['rgba(79, 70, 229, 0.05)', 'rgba(99, 102, 241, 0.1)']}
-                        style={styles.mapGradient}
+                    <MapView
+                        ref={mapRef}
+                        provider={PROVIDER_GOOGLE}
+                        style={StyleSheet.absoluteFillObject}
+                        region={region}
                     >
-                        <View style={styles.mapContent}>
-                            <Text style={styles.mapLabel}>Direct Fly Perspective</Text>
-                            <View style={styles.routeViz}>
-                                <View style={styles.dot} />
-                                <View style={styles.dashedLine} />
-                                <PlaneTakeoff size={24} color={colors.primary} style={styles.planeIcon} />
-                                <View style={styles.dashedLine} />
-                                <View style={[styles.dot, { backgroundColor: colors.accent }]} />
-                            </View>
-                            <Text style={styles.routeText}>
-                                {fromLocation} ➔ {toLocation || '...'}
-                            </Text>
-                        </View>
-                    </LinearGradient>
+                        {/* Render Stations */}
+                        {stations.map((station, index) => (
+                            station.location && (
+                                <Marker
+                                    key={`station-${index}`}
+                                    coordinate={{
+                                        latitude: station.location.lat,
+                                        longitude: station.location.lng
+                                    }}
+                                    title={station.name}
+                                    pinColor="blue"
+                                >
+                                    <View style={styles.markerContainer}>
+                                        <MapPin size={24} color={colors.primary} fill="white" />
+                                    </View>
+                                </Marker>
+                            )
+                        ))}
+
+                        {/* Render Birds */}
+                        {birds.map((bird, index) => (
+                            bird.location && (
+                                <Marker
+                                    key={`bird-${index}`}
+                                    coordinate={{
+                                        latitude: bird.location.lat,
+                                        longitude: bird.location.lng
+                                    }}
+                                    title={bird.name}
+                                    description={`Status: ${bird.status}`}
+                                >
+                                    <View style={styles.birdMarkerContainer}>
+                                        <NavigationIcon size={20} color="#fff" style={{ transform: [{ rotate: '-45deg' }] }} />
+                                    </View>
+                                </Marker>
+                            )
+                        ))}
+                    </MapView>
+
+                    {/* Map Overlay Controls */}
+                    <View style={styles.mapControls}>
+                        <TouchableOpacity style={styles.mapBtn} onPress={handleCheckNearbyBirds}>
+                            <LocateFixed size={20} color={colors.primary} />
+                            <Text style={styles.mapBtnText}>Check Nearby Birds</Text>
+                        </TouchableOpacity>
+                    </View>
                 </Animated.View>
 
                 {/* Status Card */}
@@ -277,53 +341,51 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     mapCard: {
-        height: 200,
+        height: 300,
         borderRadius: 24,
         borderWidth: 1,
         borderColor: colors.border,
         overflow: 'hidden',
         marginBottom: 20,
+        position: 'relative',
     },
-    mapGradient: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+    mapControls: {
+        position: 'absolute',
+        bottom: 16,
+        right: 16,
     },
-    mapContent: {
-        alignItems: 'center',
-        gap: 16,
-    },
-    mapLabel: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: colors.mutedForeground,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    routeViz: {
+    mapBtn: {
+        backgroundColor: '#fff',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
     },
-    dot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: colors.primary,
+    mapBtnText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: colors.primary,
     },
-    dashedLine: {
-        width: 40,
-        height: 1,
-        backgroundColor: colors.primary,
-        opacity: 0.3,
+    markerContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    planeIcon: {
-        transform: [{ rotate: '45deg' }],
-    },
-    routeText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.foreground,
+    birdMarkerContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.success,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
     },
     birdCard: {
         backgroundColor: '#fff',

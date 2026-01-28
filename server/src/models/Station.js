@@ -5,6 +5,10 @@ const StationSchema = new mongoose.Schema({
     code: { type: String, required: true, unique: true },
     city: { type: String, required: true },
     country: { type: String, default: 'India' },
+    location: {
+        lat: { type: Number, required: true },
+        lng: { type: Number, required: true }
+    },
     active: { type: Boolean, default: true }
 });
 

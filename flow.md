@@ -1,744 +1,1274 @@
-# Shipra App - Visual Flow Diagrams & User Interactions
+# SHIPRA AIR MOBILITY APP - PRODUCT REQUIREMENTS DOCUMENT
 
-## 1️⃣ Complete Application Flow Diagram
+## EXECUTIVE SUMMARY
+Shipra is a mobile application for booking aerial taxi services (air mobility). Users can book flights, track their journey in real-time, access booking history, and manage their profile - all with integrated emergency SOS capabilities.
+
+---
+
+# PART 1: APPLICATION FLOW OVERVIEW
+
+## Complete User Journey Map
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    SHIPRA AIR MOBILITY APP FLOW                     │
+│                     SHIPRA APP USER FLOW                            │
 └─────────────────────────────────────────────────────────────────────┘
 
-                            ┌──────────────┐
-                            │ SPLASH SCREEN│
-                            │ (Onboarding) │
-                            └──────┬───────┘
-                                   │ "Get Started"
-                                   ▼
-                            ┌──────────────┐
-                            │ LOGIN SCREEN │
-                            │(Google/WhatsApp)
-                            └──────┬───────┘
-                                   │
-                    ┌──────────────┴──────────────┐
-                    │                             │
-                    ▼ (All Main Screens)          │
-            ┌──────────────────┐                 │
-            │   HOME SCREEN    │◄────────────────┘
-            │ (Main Dashboard) │
-            └────┬──┬──┬───────┘
-                 │  │  │
-        ┌────────┘  │  └─────────────────┐
-        │           │                     │
-        ▼           ▼                     ▼
-    ┌─────────┐ ┌─────────┐        ┌──────────┐
-    │ BOOKING │ │HISTORY  │        │ PROFILE  │
-    │ SCREEN  │ │ SCREEN  │        │ SCREEN   │
-    └────┬────┘ └─────────┘        └──────────┘
+                          ENTRY POINT
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  SPLASH SCREEN   │ (Onboarding)
+                    │  - App Welcome   │
+                    │  - Get Started   │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │  LOGIN SCREEN    │ (Authentication)
+                    │ - Google Sign-in │
+                    │ - WhatsApp OTP   │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │  HOME SCREEN     │ (Main Dashboard)
+                    │ - Show Avialbty  │
+                    │ - Book Button    │
+                    └─────┬──────┬─────┘
+                          │      │
+           ┌──────────────┴──┬───┴────────────┐
+           │                 │                │
+           ▼                 ▼                ▼
+    ┌────────────┐    ┌─────────────┐   ┌──────────┐
+    │  BOOKING   │    │  HISTORY    │   │ PROFILE  │
+    │  SCREEN    │    │  SCREEN     │   │ SCREEN   │
+    │ -Route     │    │ -Past Trips │   │ -Account │
+    │ -Details   │    │ -Receipts   │   │ -Settings│
+    │ -Pricing   │    │ -Stats      │   │ -Logout  │
+    └────┬───────┘    └─────────────┘   └──────────┘
          │
-         │ "Confirm Booking"
          ▼
     ┌────────────────┐
-    │ RIDE STATUS    │
-    │   SCREEN       │
+    │ RIDE STATUS    │ (Tracking Arrival)
+    │ - Flight #42   │
+    │ - 4 min away   │
+    │ - 1.2 km dist  │
     └────┬───────────┘
-         │ "Continue to Flight"
+         │
          ▼
     ┌────────────────────┐
-    │  RIDE IN PROGRESS  │
-    │      SCREEN        │◄────────┐
-    └────┬───────┬───────┘         │
-         │       │                 │
-         │       │ "SOS Button"    │
-         │       │                 │
-         │       ▼                 │
-         │   ┌────────────┐        │
-         │   │ SOS SCREEN │        │
-         │   │(Emergency) │        │
-         │   └──────┬─────┘        │
-         │          │              │
-         │          │"Back"        │
-         │          └──────────────┘
+    │ RIDE IN PROGRESS   │ (Active Flight)
+    │ - Real-time Stats  │
+    │ - 8 min remaining  │
+    │ - ⚠️ SOS Button    │
+    └────┬──────────┬────┘
+         │          │
+         │          └──────────┐
+         │                     │
+         ▼                     ▼
+    ┌─────────┐         ┌──────────┐
+    │ SUMMARY │         │ SOS PAGE │
+    │ SCREEN  │         │ -EMERGENCY│
+    │ -Receipt│         │ -Contacts│
+    │ -Again? │         │ -Status  │
+    └────┬────┘         └──────────┘
          │
-         │"Complete Flight"
-         ▼
-    ┌──────────────┐
-    │ SUMMARY      │
-    │ SCREEN       │
-    └─────┬────────┘
-          │ "Book Another"
-          ▼
-    ┌──────────────┐
-    │ HOME SCREEN  │ (Loop back to booking)
-    └──────────────┘
+         └──────────────────────┬──────────┐
+                                │          │
+                                ▼          │
+                         (Back to HOME)   │
+                                          │
+                          (From SOS)──────┘
 ```
 
 ---
 
-## 2️⃣ Screen-by-Screen Navigation Map
+# PART 2: DETAILED SCREEN SPECIFICATIONS
 
+## SCREEN 1: SPLASH SCREEN
+**Entry Point** | **First-Time Experience**
+
+### Purpose
+- App introduction and onboarding
+- Brand presentation
+- Transition to login
+
+### Screen Content & Layout
 ```
-                    ┌─────────────────────────────────┐
-                    │     NAVIGATION BAR (Bottom)     │
-                    │  Home | History | Profile       │
-                    └─────────────────────────────────┘
-                                  ▲
-                    ┌─────────────┼─────────────┐
-                    │             │             │
-              ┌─────┴────┐  ┌────┴─────┐ ┌────┴──────┐
-              │   HOME   │  │ HISTORY  │ │ PROFILE   │
-              │  SCREEN  │  │  SCREEN  │ │  SCREEN   │
-              └─────┬────┘  └──────────┘ └───────────┘
-                    │
-          ┌─────────┴──────────┐
-          │                    │
-    ┌─────▼────┐        ┌─────▼──────┐
-    │ BOOKING  │        │ SOS SCREEN │
-    │ SCREEN   │        │  (from     │
-    └─────┬────┘        │ Ride In    │
-          │             │ Progress)  │
-    ┌─────▼────────────┐ └────────────┘
-    │  RIDE STATUS     │
-    │    SCREEN        │
-    └─────┬────────────┘
-          │
-    ┌─────▼──────────────┐
-    │ RIDE IN PROGRESS   │
-    │    SCREEN          │
-    └─────┬──────────────┘
-          │
-    ┌─────▼───────────┐
-    │  SUMMARY        │
-    │  SCREEN         │
-    └─────┬───────────┘
-          │
-          └──────────► HOME SCREEN
+┌─────────────────────────┐
+│                         │
+│    GRADIENT BACKGROUND  │
+│      (Blue Primary)     │
+│                         │
+│        ✈️ ICON          │ (Animated, Rotating)
+│    (Airplane Emoji)     │
+│                         │
+│      "Shipra"           │ (App Name - Bold, Large)
+│                         │
+│ "Future of Air Mobility"│ (Tagline - Smaller Text)
+│                         │
+│    • • • (Loading)      │ (3 Animated Dots)
+│                         │
+│    ┌─────────────────┐  │
+│    │ Get Started     │  │ (Button - Blue)
+│    └─────────────────┘  │
+│                         │
+└─────────────────────────┘
 ```
 
----
+### Mandatory Content
+- ✓ Animated airplane icon
+- ✓ App name "Shipra"
+- ✓ Tagline/subtitle
+- ✓ Loading animation
+- ✓ "Get Started" call-to-action button
 
-## 3️⃣ Component Hierarchy & State Flow
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap "Get Started" | LOGIN SCREEN | Navigate to login |
 
+### Visual States
+- **Default**: Animated gradient background, pulsing elements
+- **Button Hover**: Scale up, add shadow glow
+
+### Navigation Path
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                    app/page.tsx (Root)                         │
-│  State: currentScreen (splash|login|home|booking|...)          │
-│  Handler: setCurrentScreen()                                   │
-└────────────┬─────────────────────────────────────────────────┘
-             │
-             │ renderScreen() switch statement
-             │
-    ┌────────┴─────────────────────┬──────────────────┬──────────┐
-    │                              │                  │          │
-    ▼                              ▼                  ▼          ▼
-┌──────────────┐            ┌──────────────┐  ┌──────────────┐ ...
-│SplashScreen  │            │LoginScreen   │  │HomeScreen    │
-│              │            │              │  │              │
-│Props:        │            │Props:        │  │Props:        │
-│onNext()      │            │onNext()      │  │onNext()      │
-│              │            │              │  │              │
-│State: -      │            │State: -      │  │State: -      │
-└──────────────┘            └──────────────┘  └──────────────┘
-     │                           │                    │
-     └───────────┬───────────────┴────────────────────┘
-                 │
-                 ▼
-        Passes to setCurrentScreen()
-        
-        Example Flow:
-        SplashScreen.onNext() → 
-        setCurrentScreen('login') → 
-        Re-renders with LoginScreen
+SPLASH SCREEN → (Get Started) → LOGIN SCREEN
 ```
 
 ---
 
-## 4️⃣ User Actions & State Transitions
+## SCREEN 2: LOGIN SCREEN
+**Authentication** | **Entry Gate**
 
+### Purpose
+- User authentication (new or returning)
+- Two login method options
+- Privacy agreement acknowledgment
+
+### Screen Content & Layout
 ```
-┌─────────────────────────────────────────────────────────────┐
-│              USER ACTIONS → STATE CHANGES                   │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────┐
+│                         │
+│  "Welcome to Shipra"    │ (Heading)
+│                         │
+│"Book your flight        │ (Subheading)
+│ in seconds"             │
+│                         │
+│   ┌─────────────────┐   │
+│   │  Airplane Emoji │   │ (Illustration/Icon)
+│   │  in Gradient    │   │
+│   │     Box         │   │
+│   └─────────────────┘   │
+│                         │
+│ ┌───────────────────┐   │
+│ │ 🔤 Sign in with   │   │ (White/Gray Button)
+│ │ Google            │   │
+│ └───────────────────┘   │
+│                         │
+│ ┌───────────────────┐   │
+│ │ 💬 Login with     │   │ (Primary Blue Button)
+│ │ WhatsApp          │   │
+│ └───────────────────┘   │
+│                         │
+│ Terms & Privacy Links   │ (Small Text, Blue)
+│ (Underlined)            │
+│                         │
+│ "Premium air travel"    │ (Footer Text - Muted)
+│ "experience"            │
+│                         │
+└─────────────────────────┘
+```
 
-SPLASH SCREEN
-  └─ User clicks "Get Started"
-     └─ setCurrentScreen('login')
-        └─ Transition to: LOGIN SCREEN
+### Mandatory Content
+- ✓ Welcome message/heading
+- ✓ Subheading text
+- ✓ Google sign-in button
+- ✓ WhatsApp OTP login button
+- ✓ Terms & Privacy links
+- ✓ Footer tagline
 
-LOGIN SCREEN
-  ├─ User clicks "Continue with Google"
-  │  └─ setCurrentScreen('home')
-  │     └─ Transition to: HOME SCREEN
-  │
-  └─ User clicks "WhatsApp OTP Login"
-     └─ setCurrentScreen('home')
-        └─ Transition to: HOME SCREEN
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap Google button | HOME SCREEN | Authenticate & navigate |
+| Tap WhatsApp button | HOME SCREEN | Authenticate & navigate |
+| Tap Terms link | External | Open terms page |
+| Tap Privacy link | External | Open privacy page |
 
-HOME SCREEN
-  ├─ User clicks "Book a Flight"
-  │  └─ setCurrentScreen('booking')
-  │     └─ Transition to: BOOKING SCREEN
-  │
-  ├─ User clicks History (nav bar)
-  │  └─ setCurrentScreen('history')
-  │     └─ Transition to: BOOKING HISTORY SCREEN
-  │
-  └─ User clicks Profile (nav bar)
-     └─ setCurrentScreen('profile')
-        └─ Transition to: PROFILE SCREEN
+### Visual States
+- **Google Button**: White/light background, hover scale
+- **WhatsApp Button**: Primary blue, hover shadow
+- **Links**: Underlined, color change on hover
 
-BOOKING SCREEN
-  ├─ User clicks Swap Button
-  │  └─ setSwapped(!swapped)
-  │     └─ Local state update (location swap)
-  │
-  └─ User clicks "Confirm Booking"
-     └─ setCurrentScreen('ride-status')
-        └─ Transition to: RIDE STATUS SCREEN
-
-RIDE STATUS SCREEN
-  ├─ User clicks "Continue to Flight"
-  │  └─ setCurrentScreen('ride-progress')
-  │     └─ Transition to: RIDE IN PROGRESS SCREEN
-  │
-  └─ User clicks "Cancel Booking"
-     └─ (Cancel logic - could return to home)
-
-RIDE IN PROGRESS SCREEN
-  ├─ User clicks "Complete Flight"
-  │  └─ setCurrentScreen('summary')
-  │     └─ Transition to: RIDE SUMMARY SCREEN
-  │
-  └─ User clicks "SOS / Emergency"
-     └─ setShowSOS(true)
-        └─ Display emergency overlay (local state)
-           └─ Shows SOS SCREEN content
-
-SOS SCREEN (Embedded Modal)
-  └─ User clicks "Back to Flight"
-     └─ setShowSOS(false)
-        └─ Return to RIDE IN PROGRESS SCREEN
-
-RIDE SUMMARY SCREEN
-  ├─ User clicks "Download Receipt"
-  │  └─ (Download action)
-  │
-  └─ User clicks "Book Another Flight"
-     └─ setCurrentScreen('home')
-        └─ Transition to: HOME SCREEN
-
-BOOKING HISTORY SCREEN
-  └─ User clicks "Download Receipt" (on any booking)
-     └─ (Download action)
-
-PROFILE SCREEN
-  └─ User clicks "Logout"
-     └─ onLogout() → setCurrentScreen('login')
-        └─ Transition to: LOGIN SCREEN
+### Navigation Path
+```
+LOGIN SCREEN → (Google/WhatsApp) → HOME SCREEN
 ```
 
 ---
 
-## 5️⃣ Animation Flow Diagram
+## SCREEN 3: HOME SCREEN
+**Main Dashboard** | **Central Hub** | **After Login**
 
+### Purpose
+- Show available flights/services
+- Display user location
+- Main entry point for booking
+- Access to other features via bottom nav
+
+### Screen Content & Layout
 ```
-┌────────────────────────────────────────────────────────────┐
-│         ANIMATION SEQUENCE FOR SCREEN TRANSITIONS         │
-└────────────────────────────────────────────────────────────┘
-
-AnimatePresence (Framer Motion)
-├─ Current Screen
-│  └─ Variants:
-│     ├─ initial: opacity: 0, x: 100
-│     ├─ animate: opacity: 1, x: 0
-│     └─ exit: opacity: 0, x: -100
-│
-└─ Transition: spring, damping: 25, stiffness: 300
-
-ELEMENT-LEVEL ANIMATIONS (Inside Screens)
-
-Container Animations:
-┌─────────────────────┐
-│ containerVariants  │
-├─────────────────────┤
-│ hidden:             │
-│  opacity: 0         │
-│ visible:            │
-│  opacity: 1         │
-│  staggerChildren:   │
-│   100-150ms delay   │
-└─────────────────────┘
-
-Item Animations (Children):
-┌─────────────────────┐
-│ itemVariants       │
-├─────────────────────┤
-│ hidden:             │
-│  opacity: 0         │
-│  y: 20              │
-│  scale: 0.8         │
-│ visible:            │
-│  opacity: 1         │
-│  y: 0               │
-│  scale: 1           │
-│ transition:         │
-│  spring physics     │
-│  damping: 25        │
-│  stiffness: 300     │
-└─────────────────────┘
-
-Interactive Animations:
-
-whileHover:
-  scale: 1.05
-  boxShadow: 0 20px 40px
-  y: -4 (lift effect)
-
-whileTap:
-  scale: 0.98
-  
-Infinite Animations:
-  ├─ rotate: 360° (continuous)
-  ├─ scale: [1, 1.2, 1] (pulse)
-  ├─ opacity: [0.5, 1, 0.5] (fade)
-  └─ y: [0, -10, 0] (bounce)
+┌─────────────────────────┐
+│ Hey, Traveler!          │ (Greeting)
+│ 📍 Downtown Airport     │ (Location with icon)
+├─────────────────────────┤
+│                         │
+│    ┌───────────────┐    │
+│    │  MAP AREA     │    │ (Live Location Map)
+│    │  🗺️            │    │
+│    │ (Animated)    │    │
+│    │ 🔴 (Marker)   │    │
+│    └───────────────┘    │
+│                         │
+├─────────────────────────┤
+│ ┌──────────────────┐   │
+│ │ Nearest Bird     │   │ (Availability Card)
+│ │ Available        │   │
+│ │                  │   │
+│ │ ✈️ Bird #42      │   │
+│ │ Ready | ⚡       │   │
+│ │                  │   │
+│ │ 2.3 km away      │   │
+│ │ 4 min             │   │
+│ └──────────────────┘   │
+│                         │
+│ ┌──────────────────┐   │
+│ │ Book a Flight    │   │ (Primary Button)
+│ └──────────────────┘   │
+│                         │
+└─────────────────────────┘
 ```
 
----
+### Mandatory Content
+- ✓ Greeting message ("Hey, Traveler!")
+- ✓ Current location display with icon
+- ✓ Live map area with pulsing animation
+- ✓ Availability card showing nearest aircraft
+- ✓ Aircraft ID (e.g., "Bird #42")
+- ✓ Distance and time estimate
+- ✓ "Book a Flight" button
 
-## 6️⃣ Data Flow for Booking Process
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap "Book a Flight" | BOOKING SCREEN | Navigate to booking |
+| Tap Home icon (bottom nav) | HOME SCREEN | Refresh/stay |
+| Tap History icon (bottom nav) | HISTORY SCREEN | View past bookings |
+| Tap Profile icon (bottom nav) | PROFILE SCREEN | View profile |
 
+### Visual States
+- **Map Area**: Pulsing circles (ripple effect), hover zoom effect
+- **Availability Card**: Hover lift effect, animated icon
+- **Button**: Hover scale, shadow glow
+
+### Navigation Path
 ```
-┌──────────────────────────────────────────────────────────┐
-│           BOOKING FLOW - DATA TRANSFORMATION             │
-└──────────────────────────────────────────────────────────┘
-
-HOME SCREEN
-└─ No booking data
-   │
-   └─ User clicks "Book a Flight"
-      │
-      ▼
-BOOKING SCREEN
-├─ State: swapped (boolean)
-├─ Display: From Location, To Location
-├─ Calculate: Distance, Duration, Price
-│
-├─ From: Downtown Airport (static)
-├─ To: City Center Terminal (or swapped)
-├─ Distance: 12.5 km
-├─ Time: 15 min
-├─ Service Fee: ₹150
-├─ Subtotal: ₹2,850
-├─ Total: ₹3,000
-│
-└─ Pass to next screen:
-   │
-   ▼
-RIDE STATUS SCREEN
-├─ Booking confirmed
-├─ Assignment: Flight #42
-├─ Live tracking initiated
-├─ Distance: 1.2 km
-├─ Time to Arrive: 4 min
-│
-└─ Continue when ready:
-   │
-   ▼
-RIDE IN PROGRESS SCREEN
-├─ Flight active
-├─ Altitude: 250m
-├─ Speed: 95 km/h
-├─ Time Remaining: 8 min
-├─ Distance: 6.2 km
-│
-└─ Flight completes:
-   │
-   ▼
-RIDE SUMMARY SCREEN
-├─ Distance: 12.5 km
-├─ Duration: 15 min
-├─ Avg Speed: 92 km/h
-├─ Base Fare: ₹2,850
-├─ Service Fee: ₹150
-├─ Total Paid: ₹3,000
-└─ Add to Booking History
-
-BOOKING HISTORY SCREEN
-└─ Route: Downtown → City Center
-   Date: Jan 20, 2024
-   Cost: ₹3,000
-   Duration: 15 min
-   Distance: 12.5 km
-   Status: completed
+HOME SCREEN → Book a Flight → BOOKING SCREEN
+HOME SCREEN → History → HISTORY SCREEN
+HOME SCREEN → Profile → PROFILE SCREEN
 ```
 
 ---
 
-## 7️⃣ Component Composition Tree
+## SCREEN 4: BOOKING SCREEN
+**Flight Selection & Confirmation** | **Route Planning**
 
+### Purpose
+- User selects departure and arrival locations
+- Shows trip details and pricing
+- Confirms booking
+
+### Screen Content & Layout
 ```
-App (app/page.tsx)
-│
-├─ Switch currentScreen
-│  │
-│  ├─ Case: 'splash'
-│  │  └─ motion.div
-│  │     └─ SplashScreen
-│  │        ├─ Container (gradient background)
-│  │        ├─ Logo (rotating airplane)
-│  │        ├─ Title (Shipra)
-│  │        ├─ Tagline
-│  │        ├─ Loading Dots
-│  │        └─ Get Started Button
-│  │
-│  ├─ Case: 'login'
-│  │  └─ motion.div
-│  │     └─ LoginScreen
-│  │        ├─ Header
-│  │        ├─ Illustration
-│  │        ├─ Google Button
-│  │        ├─ WhatsApp Button
-│  │        ├─ Terms & Privacy
-│  │        └─ Footer
-│  │
-│  ├─ Case: 'home'
-│  │  └─ motion.div
-│  │     └─ HomeScreen
-│  │        ├─ Header Section
-│  │        ├─ Map Placeholder
-│  │        ├─ Availability Card
-│  │        └─ Book Button
-│  │
-│  ├─ Case: 'booking'
-│  │  └─ motion.div
-│  │     └─ BookingScreen
-│  │        ├─ Header
-│  │        ├─ From Location Card
-│  │        ├─ Swap Button
-│  │        ├─ To Location Card
-│  │        ├─ Details Card
-│  │        ├─ Price Summary
-│  │        └─ Confirm Button
-│  │
-│  ├─ Case: 'ride-status'
-│  │  └─ motion.div
-│  │     └─ RideStatusScreen
-│  │        ├─ Header
-│  │        ├─ Live Tracker
-│  │        ├─ Distance Card
-│  │        ├─ Time Card
-│  │        ├─ Status Card
-│  │        ├─ Continue Button
-│  │        └─ Cancel Button
-│  │
-│  ├─ Case: 'ride-progress'
-│  │  └─ motion.div
-│  │     └─ RideInProgressScreen
-│  │        ├─ Header
-│  │        ├─ Live Route
-│  │        ├─ Stats Grid (4 items)
-│  │        ├─ Status Indicator
-│  │        ├─ Complete Button
-│  │        └─ SOS Button
-│  │
-│  ├─ Case: 'sos'
-│  │  └─ motion.div
-│  │     └─ SosScreen (Full page)
-│  │        ├─ Alert Icon
-│  │        ├─ Title
-│  │        ├─ Description
-│  │        ├─ SOS Button
-│  │        ├─ Contact Card
-│  │        ├─ Location Card
-│  │        ├─ Bird ID Card
-│  │        ├─ Instructions
-│  │        └─ Back Button
-│  │
-│  ├─ Case: 'summary'
-│  │  └─ motion.div
-│  │     └─ RideSummaryScreen
-│  │        ├─ Success Animation
-│  │        ├─ Route Summary
-│  │        ├─ Details Cards (3)
-│  │        ├─ Cost Breakdown
-│  │        ├─ Download Button
-│  │        └─ Book Another Button
-│  │
-│  ├─ Case: 'history'
-│  │  └─ motion.div
-│  │     └─ BookHistoryScreen
-│  │        ├─ Header
-│  │        ├─ Bookings List
-│  │        │  └─ Booking Card (x4)
-│  │        │     ├─ Route & Date
-│  │        │     ├─ Status Badge
-│  │        │     ├─ Details Grid
-│  │        │     └─ Receipt Button
-│  │        └─ Summary Card
-│  │
-│  └─ Case: 'profile'
-│     └─ motion.div
-│        └─ ProfileScreen
-│           ├─ Avatar
-│           ├─ User Info
-│           ├─ Stats Grid (3)
-│           ├─ Menu Items (4)
-│           │  ├─ Settings
-│           │  ├─ Notifications
-│           │  ├─ Safety & Privacy
-│           │  └─ Rewards
-│           └─ Logout Button
-│
-└─ NavigationBar
-   ├─ Home Icon
-   ├─ History Icon
-   └─ Profile Icon
+┌─────────────────────────┐
+│ Book Your Flight        │ (Header)
+│ Select your route       │ (Subheader)
+│                         │
+├─────────────────────────┤
+│ From:                   │
+│ ┌─────────────────────┐ │
+│ │ 📍 Downtown Airport │ │ (From Location)
+│ │    (Fixed)          │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ ⇄ (Swap Button)     │ │ (Rotates on click)
+│ └─────────────────────┘ │
+│                         │
+│ To:                     │
+│ ┌─────────────────────┐ │
+│ │ 📍 City Center      │ │ (To Location)
+│ │    Terminal         │ │ (or Swapped)
+│ └─────────────────────┘ │
+│                         │
+├─────────────────────────┤
+│ Trip Details:           │
+│                         │
+│ Distance: 12.5 km       │ (Metric 1)
+│ Est. Time: 15 minutes   │ (Metric 2)
+│ Service Fee: ₹150       │ (Metric 3)
+│                         │
+├─────────────────────────┤
+│ Price Breakdown:        │
+│                         │
+│ Subtotal: ₹2,850        │
+│ ⚡ Total: ₹3,000        │ (Animated)
+│                         │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │ Confirm Booking     │ │ (Primary Button)
+│ └─────────────────────┘ │
+│                         │
+└─────────────────────────┘
+```
+
+### Mandatory Content
+- ✓ Heading: "Book Your Flight"
+- ✓ From location (default: Downtown Airport)
+- ✓ To location
+- ✓ Swap button to interchange locations
+- ✓ Trip details (distance, time, fees)
+- ✓ Price breakdown (subtotal, total)
+- ✓ "Confirm Booking" button
+
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap Swap button | Local State | Swap from/to locations |
+| Tap "Confirm Booking" | RIDE STATUS SCREEN | Book flight & navigate |
+| Back (system) | HOME SCREEN | Cancel booking |
+
+### Visual States
+- **Location Cards**: Hover lift effect
+- **Swap Button**: Rotate 180° on click, hover color
+- **Price Section**: Pulsing animation for total amount
+- **Confirm Button**: Hover scale, shadow
+
+### Navigation Path
+```
+HOME SCREEN → BOOKING SCREEN → Confirm → RIDE STATUS SCREEN
+BOOKING SCREEN → (Back) → HOME SCREEN
 ```
 
 ---
 
-## 8️⃣ Mobile UI Layout Structure
+## SCREEN 5: RIDE STATUS SCREEN
+**Tracking Arrival** | **Flight Assignment**
 
+### Purpose
+- Show aircraft approaching user
+- Real-time distance and time tracking
+- Allow user to continue to flight or cancel booking
+
+### Screen Content & Layout
+```
+┌─────────────────────────┐
+│ Your Bird is Arriving   │ (Header)
+│ Flight #42 assigned     │ (Subheader)
+│                         │
+├─────────────────────────┤
+│   ┌────────────────┐   │
+│   │ TRACKER MAP    │   │ (Live Tracking)
+│   │    ✈️ (bounce) │   │ (Animated plane)
+│   │  • Live Track  │   │
+│   │ 🟢 (top-right) │   │ (ETA marker)
+│   └────────────────┘   │
+│                         │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │ Distance from You   │ │ (Stat 1)
+│ │    1.2 km           │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Time to Arrive      │ │ (Stat 2)
+│ │    4 minutes        │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Status              │ │ (Stat 3)
+│ │ Live • On Time 🟢   │ │ (Pulsing indicator)
+│ └─────────────────────┘ │
+│                         │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │ Continue to Flight  │ │ (Primary Button)
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Cancel Booking      │ │ (Secondary Button)
+│ └─────────────────────┘ │
+│                         │
+└─────────────────────────┘
+```
+
+### Mandatory Content
+- ✓ Header: "Your Bird is Arriving"
+- ✓ Flight assignment info (Flight #42)
+- ✓ Live tracker map with animated airplane
+- ✓ Distance metric (1.2 km)
+- ✓ Time to arrival metric (4 minutes)
+- ✓ Status badge with pulsing indicator
+- ✓ "Continue to Flight" button
+- ✓ "Cancel Booking" button
+
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap "Continue to Flight" | RIDE IN PROGRESS SCREEN | Start active flight tracking |
+| Tap "Cancel Booking" | HOME SCREEN | Cancel & return home |
+| System monitoring | (Auto-update) | Real-time distance/time updates |
+
+### Visual States
+- **Tracker Map**: Bouncing airplane, pulsing circles
+- **Status Indicator**: Green pulsing dot
+- **Cards**: Hover lift effect
+- **Buttons**: Hover scale, primary/secondary styles
+
+### Navigation Path
+```
+BOOKING SCREEN → RIDE STATUS SCREEN → Continue → RIDE IN PROGRESS SCREEN
+RIDE STATUS SCREEN → Cancel → HOME SCREEN
+```
+
+---
+
+## SCREEN 6: RIDE IN PROGRESS SCREEN
+**Active Flight Monitoring** | **Real-Time Tracking**
+
+### Purpose
+- Monitor active flight with live statistics
+- Show estimated time remaining
+- Provide emergency SOS option
+- Allow flight completion
+
+### Screen Content & Layout
+```
+┌─────────────────────────┐
+│ Flight in Progress      │ (Header)
+│ Bird #42 • Altitude:    │ (Subheader)
+│ 250m                    │
+│                         │
+├─────────────────────────┤
+│   ┌────────────────┐   │
+│   │ LIVE ROUTE     │   │ (Route Visualization)
+│   │  ✈️ → Moving   │   │ (Animated path)
+│   │ (Gradient BG)  │   │
+│   └────────────────┘   │
+│                         │
+├─────────────────────────┤
+│ FLIGHT STATISTICS:      │
+│                         │
+│ ┌──────────┬──────────┐ │
+│ │ Time     │ Speed    │ │ (2x2 Grid)
+│ │ Remaining│          │ │
+│ │ 8 min    │ 95 km/h  │ │
+│ └──────────┴──────────┘ │
+│                         │
+│ ┌──────────┬──────────┐ │
+│ │ Distance │ Altitude │ │
+│ │ 6.2 km   │ 250 m    │ │
+│ └──────────┴──────────┘ │
+│                         │
+├─────────────────────────┤
+│ Status: Safe 🟢         │ (Status Badge)
+│ All systems operational │
+│                         │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │ Complete Flight     │ │ (Primary Button)
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ 🚨 SOS / Emergency  │ │ (Emergency Button)
+│ └─────────────────────┘ │
+│                         │
+└─────────────────────────┘
+```
+
+### Mandatory Content
+- ✓ Header: "Flight in Progress"
+- ✓ Flight ID and altitude info
+- ✓ Live route visualization with moving airplane
+- ✓ Statistics grid (4 metrics):
+  - Time remaining
+  - Current speed
+  - Distance remaining
+  - Current altitude
+- ✓ Status indicator (Safe/Normal)
+- ✓ "Complete Flight" button
+- ✓ "🚨 SOS / Emergency" button (red)
+
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap "Complete Flight" | RIDE SUMMARY SCREEN | End flight & show summary |
+| Tap "SOS / Emergency" | SOS SCREEN or MODAL | Show emergency interface |
+| System monitoring | (Auto-update) | Real-time stats updates |
+
+### Visual States
+- **Route Animation**: Airplane moves along path
+- **Status Badge**: Green pulsing indicator
+- **Stats Cards**: Hover lift effect
+- **SOS Button**: Red background, prominent
+- **Complete Button**: Blue/primary styling
+
+### Emergency Feature
+When SOS button is tapped, one of two things happens:
+1. **Modal Overlay**: Red emergency overlay appears over current screen
+2. **Full Screen**: Navigate to full SOS screen
+
+### Navigation Path
+```
+RIDE STATUS SCREEN → RIDE IN PROGRESS SCREEN → Complete → RIDE SUMMARY SCREEN
+RIDE IN PROGRESS SCREEN → SOS → SOS SCREEN (or MODAL)
+```
+
+---
+
+## SCREEN 7: SOS SCREEN
+**Emergency Mode** | **Safety Response**
+
+### Purpose
+- Emergency alert system
+- Dispatch emergency services
+- Provide critical information during emergency
+- Contact information display
+
+### Screen Content & Layout
+```
+┌─────────────────────────┐
+│                         │
+│  RED BACKGROUND         │ (Destructive color alert)
+│  WITH GRADIENT          │
+│                         │
+│      🚨 (Bouncing)      │ (Alarm emoji - animated)
+│                         │
+│  "EMERGENCY SOS"        │ (Large heading)
+│                         │
+│ "Stay calm. Help is     │ (Instructions)
+│  being dispatched to    │
+│  your location          │
+│  immediately."          │
+│                         │
+├─────────────────────────┤
+│                         │
+│   ┌────────────────┐   │
+│   │   SOS BUTTON   │   │ (Large - 128x128px)
+│   │      SOS       │   │ (White bg, red text)
+│   │  (Click active)│   │
+│   └────────────────┘   │
+│                         │
+├─────────────────────────┤
+│ EMERGENCY INFORMATION:  │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Emergency Contact   │ │ (Card 1)
+│ │ +91-XXXX-XXXX-01    │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Your Location       │ │ (Card 2)
+│ │ 28.7041° N,         │ │
+│ │ 77.1025° E          │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Bird ID             │ │ (Card 3)
+│ │ Flight #42          │ │
+│ └─────────────────────┘ │
+│                         │
+├─────────────────────────┤
+│ EMERGENCY INSTRUCTIONS: │
+│                         │
+│ ✓ Stay in seat & calm   │ (Checklist item 1)
+│ ✓ Keep phone accessible │ (Checklist item 2)
+│ ✓ Help en route         │ (Checklist item 3)
+│                         │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │ Back to Flight      │ │ (Secondary Button)
+│ └─────────────────────┘ │
+│                         │
+└─────────────────────────┘
+```
+
+### Mandatory Content
+- ✓ Red alert background
+- ✓ Animated alarm emoji
+- ✓ "EMERGENCY SOS" heading
+- ✓ Calming instructions text
+- ✓ Large SOS button (interactive)
+- ✓ Emergency contact number
+- ✓ User location (GPS coordinates)
+- ✓ Aircraft/flight ID
+- ✓ Emergency instructions checklist (3 items)
+- ✓ "Back to Flight" button to exit emergency mode
+
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap SOS button | (Dispatch Service) | Send emergency alert |
+| Tap "Back to Flight" | RIDE IN PROGRESS SCREEN | Return to normal flight view |
+| (Auto-action) | (Emergency Services) | Services dispatched immediately |
+
+### Visual States
+- **Background**: Red gradient, full screen
+- **SOS Button**: Large, clickable, scale feedback
+- **Information Cards**: White/10 background, white/20 borders
+- **Instructions**: Checkmark style with clear hierarchy
+
+### Navigation Path
+```
+RIDE IN PROGRESS SCREEN → SOS Button → SOS SCREEN
+SOS SCREEN → "Back to Flight" → RIDE IN PROGRESS SCREEN
+```
+
+---
+
+## SCREEN 8: RIDE SUMMARY SCREEN
+**Trip Completion** | **Receipt & Confirmation**
+
+### Purpose
+- Celebrate successful trip completion
+- Show trip summary and pricing
+- Allow receipt download
+- Provide option to book again
+
+### Screen Content & Layout
+```
+┌─────────────────────────┐
+│                         │
+│    ┌──────────────┐    │
+│    │   ✓ Check    │    │ (Success icon in circle)
+│    │    (Bounce)  │    │ (Animated)
+│    └──────────────┘    │
+│                         │
+│ "Flight Completed!"     │ (Large heading)
+│                         │
+│ "Thank you for flying   │ (Subheading)
+│  with Shipra"           │
+│                         │
+├─────────────────────────┤
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Downtown Airport    │ │ (Route summary)
+│ │      → (arrow)      │ │
+│ │ City Center Terminal │ │
+│ └─────────────────────┘ │
+│                         │
+├─────────────────────────┤
+│ TRIP DETAILS:           │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Distance Traveled   │ │ (Metric 1)
+│ │    12.5 km          │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Flight Duration     │ │ (Metric 2)
+│ │    15 minutes       │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Average Speed       │ │ (Metric 3)
+│ │    92 km/h          │ │
+│ └─────────────────────┘ │
+│                         │
+├─────────────────────────┤
+│ COST BREAKDOWN:         │
+│                         │
+│ Base Fare: ₹2,850       │
+│ Service Fee: ₹150       │
+│                         │
+│ ⚡ Total Paid: ₹3,000   │ (Highlighted/Pulsing)
+│                         │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │ 📥 Download Receipt │ │ (Secondary Button)
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Book Another Flight │ │ (Primary Button)
+│ └─────────────────────┘ │
+│                         │
+└─────────────────────────┘
+```
+
+### Mandatory Content
+- ✓ Success checkmark icon (animated bounce)
+- ✓ "Flight Completed!" heading
+- ✓ Thank you message
+- ✓ Route summary (From → To)
+- ✓ Trip details (3 metrics):
+  - Distance traveled
+  - Flight duration
+  - Average speed
+- ✓ Cost breakdown:
+  - Base fare
+  - Service fee
+  - Total paid amount
+- ✓ "Download Receipt" button
+- ✓ "Book Another Flight" button
+
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap "Download Receipt" | (Download) | Download PDF/image receipt |
+| Tap "Book Another Flight" | HOME SCREEN | Return to home dashboard |
+| (View only) | N/A | Display trip confirmation |
+
+### Visual States
+- **Checkmark**: Bouncing animation on load
+- **Details Cards**: Hover lift effect
+- **Total Amount**: Pulsing animation
+- **Buttons**: Primary/secondary styling with hover effects
+
+### Navigation Path
+```
+RIDE IN PROGRESS SCREEN → Complete → RIDE SUMMARY SCREEN
+RIDE SUMMARY SCREEN → "Book Another" → HOME SCREEN
+```
+
+---
+
+## SCREEN 9: BOOKING HISTORY SCREEN
+**Past Trips & Bookings** | **Travel History**
+
+### Purpose
+- Display all past flight bookings
+- Show trip details and receipts
+- Allow receipt downloads
+- Display travel statistics
+
+### Screen Content & Layout
+```
+┌─────────────────────────┐
+│ Booking History         │ (Header)
+│ View all your past      │ (Subheader)
+│ flights                 │
+│                         │
+├─────────────────────────┤
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Downtown → Airport  │ │ (Booking 1)
+│ │ Jan 20, 2024        │ │
+│ │ ✓ Completed         │ │
+│ │                     │ │
+│ │ ⏱️ 12 min          │ │
+│ │ 📍 8.5 km          │ │
+│ │ 💵 $45.99          │ │
+│ │                     │ │
+│ │ 📥 Download Receipt │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Airport → Convention│ │ (Booking 2)
+│ │ Jan 18, 2024        │ │
+│ │ ✓ Completed         │ │
+│ │                     │ │
+│ │ ⏱️ 10 min          │ │
+│ │ 📍 7.2 km          │ │
+│ │ 💵 $38.50          │ │
+│ │                     │ │
+│ │ 📥 Download Receipt │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Hotel → Downtown    │ │ (Booking 3)
+│ │ Jan 16, 2024        │ │
+│ │ ✓ Completed         │ │
+│ │                     │ │
+│ │ ⏱️ 14 min          │ │
+│ │ 📍 9.8 km          │ │
+│ │ 💵 $52.00          │ │
+│ │                     │ │
+│ │ 📥 Download Receipt │ │
+│ └─────────────────────┘ │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Downtown → Harbor   │ │ (Booking 4)
+│ │ Jan 14, 2024        │ │
+│ │ ✓ Completed         │ │
+│ │                     │ │
+│ │ ⏱️ 9 min           │ │
+│ │ 📍 6.5 km          │ │
+│ │ 💵 $35.75          │ │
+│ │                     │ │
+│ │ 📥 Download Receipt │ │
+│ └─────────────────────┘ │
+│                         │
+├─────────────────────────┤
+│ SUMMARY:                │
+│ Total Flights: 12       │ (Stat 1)
+│ Total Spent: $524.24    │ (Stat 2)
+│                         │
+└─────────────────────────┘
+```
+
+### Mandatory Content
+- ✓ Header: "Booking History"
+- ✓ Subheader: "View all your past flights"
+- ✓ Multiple booking cards (at least 4) with:
+  - Route (From → To)
+  - Date
+  - Status badge
+  - Duration
+  - Distance
+  - Cost
+  - Download receipt option
+- ✓ Summary section:
+  - Total flights count
+  - Total amount spent
+
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap "Download Receipt" | (Download) | Download receipt for that booking |
+| Tap booking card | (Optional) | View detailed trip info (future feature) |
+| Tap History icon (bottom nav) | HISTORY SCREEN | Refresh/stay |
+| Swipe/Scroll | (Auto-scroll) | View more bookings |
+
+### Visual States
+- **Booking Cards**: Hover lift and scale effect
+- **Download Button**: Hover color change
+- **Icons**: Rotate on hover
+- **Cards**: Animated entrance with stagger
+
+### Navigation Path
+```
+HOME SCREEN → History (bottom nav) → BOOKING HISTORY SCREEN
+BOOKING HISTORY SCREEN → Download Receipt → (Receipt file)
+```
+
+---
+
+## SCREEN 10: PROFILE SCREEN
+**User Account & Settings** | **Account Management**
+
+### Purpose
+- Display user profile information
+- Show user statistics
+- Provide access to settings and preferences
+- Account logout
+
+### Screen Content & Layout
+```
+┌─────────────────────────┐
+│                         │
+│    ┌──────────────┐    │
+│    │  SA           │    │ (Avatar - Initials)
+│    │ (Gradient)   │    │ (Circular badge)
+│    └──────────────┘    │
+│                         │
+│ Sarah Anderson          │ (Name)
+│ sarah.anderson@         │ (Email)
+│ example.com             │
+│                         │
+├─────────────────────────┤
+│                         │
+│ STATISTICS:             │
+│                         │
+│ ┌──────────┬──────────┐ │
+│ │ Flights  │ Rating   │ │ (3-column grid)
+│ │    12    │   4.8 ⭐ │ │
+│ └──────────┴──────────┘ │
+│                          │
+│ ┌──────────┐            │
+│ │ Status   │            │
+│ │  Gold    │            │
+│ └──────────┘            │
+│                         │
+├─────────────────────────┤
+│ SETTINGS & PREFERENCES: │
+│                         │
+│ ⚙️ Settings             │ (Menu item 1)
+│ App preferences &       │
+│ profile                 │
+│ →                       │
+│                         │
+│ 🔔 Notifications        │ (Menu item 2)
+│ Manage alerts &         │
+│ updates                 │
+│ →                       │
+│                         │
+│ 🛡️ Safety & Privacy     │ (Menu item 3)
+│ Security settings       │
+│ →                       │
+│                         │
+│ 🏆 Rewards              │ (Menu item 4)
+│ Loyalty points &        │
+│ offers                  │
+│ →                       │
+│                         │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │ 🚪 Logout           │ │ (Logout Button - Red)
+│ └─────────────────────┘ │
+│                         │
+└─────────────────────────┘
+```
+
+### Mandatory Content
+- ✓ User avatar (circular with initials)
+- ✓ User name
+- ✓ User email
+- ✓ User statistics (3 stats):
+  - Total flights
+  - Rating
+  - Membership status
+- ✓ Menu items (4 options):
+  - Settings (with description)
+  - Notifications (with description)
+  - Safety & Privacy (with description)
+  - Rewards (with description)
+- ✓ Logout button (red/destructive)
+
+### User Actions
+| Action | Target | Result |
+|--------|--------|--------|
+| Tap Settings | SETTINGS PAGE (future) | Open app settings |
+| Tap Notifications | NOTIFICATIONS PAGE (future) | Manage notifications |
+| Tap Safety & Privacy | PRIVACY PAGE (future) | Security settings |
+| Tap Rewards | REWARDS PAGE (future) | View loyalty points |
+| Tap Logout | LOGIN SCREEN | Logout & return to login |
+| Tap Profile icon (bottom nav) | PROFILE SCREEN | Refresh/stay |
+
+### Visual States
+- **Avatar**: Hover scale(1.1)
+- **Menu Items**: Hover right translation, background color fill
+- **Icons**: Rotate on hover
+- **Logout Button**: Red background, hover shadow
+- **All Elements**: Animated entrance on load
+
+### Navigation Path
+```
+HOME SCREEN → Profile (bottom nav) → PROFILE SCREEN
+PROFILE SCREEN → Settings → (Settings page)
+PROFILE SCREEN → Logout → LOGIN SCREEN
+```
+
+---
+
+# PART 3: NAVIGATION ARCHITECTURE
+
+## Bottom Navigation Bar
+**Visibility**: Only visible on HOME, HISTORY, PROFILE screens
+**Hidden**: During SPLASH, LOGIN, BOOKING, RIDE STATUS, RIDE IN PROGRESS, SUMMARY, SOS screens
+
+### Navigation Items
 ```
 ┌─────────────────────────────────────┐
-│         STATUS BAR (System)         │
-├─────────────────────────────────────┤
-│                                     │
-│     SCREEN CONTENT                  │
-│     (448px max width)               │
-│                                     │
-│     ┌─────────────────────────┐     │
-│     │ Navigation Elements     │     │
-│     │ Maps/Cards/Text/Buttons │     │
-│     └─────────────────────────┘     │
-│                                     │
-│     ┌─────────────────────────┐     │
-│     │ Additional Cards/Info   │     │
-│     └─────────────────────────┘     │
-│                                     │
-│     ┌─────────────────────────┐     │
-│     │ Primary CTA Button      │     │
-│     └─────────────────────────┘     │
-│                                     │
-│  (ScrollArea if needed)             │
-│                                     │
-├─────────────────────────────────────┤
-│    BOTTOM NAVIGATION BAR (Fixed)    │
-│  Home | History | Profile           │
-├─────────────────────────────────────┤
-```
-
----
-
-## 9️⃣ Screen Visibility & Navigation States
-
-```
-NAVIGATION BAR VISIBILITY MATRIX:
-
-Screen                  Nav Bar Visible?
-─────────────────────────────────────────
-Splash                  ✗ (No)
-Login                   ✗ (No)
-Home                    ✓ (Yes) - Active
-Booking                 ✗ (No - User is in flow)
-Ride Status             ✗ (No - User is in flow)
-Ride In Progress        ✗ (No - User is in flow)
-SOS (Modal)             ✗ (No - Emergency state)
-Summary                 ✗ (No - Completion screen)
-History                 ✓ (Yes) - Active
-Profile                 ✓ (Yes) - Active
-
-NAVIGATION BAR ITEMS:
-
-┌─────────────────────────────────────┐
-│       Home      History    Profile   │
-│      (House)    (Clock)     (User)   │
-├─────────────────────────────────────┤
-
-Active State:
-┌─────────────────────────────────────┐
-│  ◐ Home    History    Profile        │
-│   Home                               │
-│  [primary/10 bg]                    │
+│  🏠        🕐        👤            │
+│  HOME    HISTORY   PROFILE         │
+│                                    │
+│  (Active item: larger, colored)    │
 └─────────────────────────────────────┘
 ```
 
----
-
-## 🔟 Gesture & Interaction Feedback Map
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│            INTERACTIVE ELEMENT FEEDBACK                      │
-└──────────────────────────────────────────────────────────────┘
-
-PRIMARY BUTTONS (Blue)
-  Idle: opacity: 1, scale: 1
-  Hover: scale: 1.05, shadow: 0 20px 40px
-  Tap: scale: 0.98
-  Active: Background filled
-
-SECONDARY BUTTONS (Border)
-  Idle: border: 2px, bg: transparent
-  Hover: bg: primary/5, border: primary
-  Tap: scale: 0.98
-  Active: bg-color fill
-
-EMERGENCY BUTTONS (Red)
-  Idle: border: destructive, text: destructive
-  Hover: bg-destructive, text: white
-  Tap: scale: 0.95
-  Active: Full destructive background
-
-CARDS
-  Idle: shadow: none, scale: 1
-  Hover: scale: 1.02, y: -4, shadow: medium
-  Tap: scale: 0.98
-
-ICON BUTTONS
-  Idle: rotate: 0
-  Hover: rotate: 360° (when specified)
-  Tap: scale: 0.9
-
-INPUT-LIKE CARDS (Swappable)
-  Idle: opacity: 1
-  Hover: scale: 1.02, y: -4
-  On Swap: fade out → swap → fade in
-
-NAVIGATION ITEMS
-  Idle: scale: 1, color: muted
-  Hover: scale: 1.05
-  Active: scale: 1.2, color: primary, bg: primary/10
-  Tap: scale: 0.95
-
-INFINITE ANIMATIONS
-  Rotating: 360° in 8-12s (linear)
-  Pulsing: scale/opacity cycle
-  Bouncing: y-axis movement
-  Ripple: Scale rings expanding
-```
+| Icon | Label | Destination | Active State |
+|------|-------|-------------|--------------|
+| 🏠 | Home | HOME SCREEN | Highlighted blue |
+| 🕐 | History | BOOKING HISTORY SCREEN | Highlighted blue |
+| 👤 | Profile | PROFILE SCREEN | Highlighted blue |
 
 ---
 
-## 1️⃣1️⃣ Error & State Handling
+# PART 4: COMPLETE NAVIGATION FLOW MAP
+
+## All Screen Transitions
 
 ```
-ERROR SCENARIOS & HANDLING:
+SPLASH SCREEN
+    └─→ Get Started → LOGIN SCREEN
 
-1. BOOKING ERRORS
-   └─ Display: Error toast/alert
-   └─ Action: Retry booking
-   └─ Fallback: Return to home
+LOGIN SCREEN
+    ├─→ Google Sign-in → HOME SCREEN
+    └─→ WhatsApp Login → HOME SCREEN
 
-2. LOCATION TRACKING ERRORS
-   └─ Display: "Connection Lost" badge
-   └─ Action: Auto-reconnect
-   └─ Fallback: Show last known location
+HOME SCREEN (Navigation Hub)
+    ├─→ Book a Flight → BOOKING SCREEN
+    ├─→ History (nav) → BOOKING HISTORY SCREEN
+    └─→ Profile (nav) → PROFILE SCREEN
 
-3. CANCELLATION CONFIRMATION
-   └─ Display: Confirmation dialog (implied)
-   └─ Action: Cancel or go back
-   └─ Result: Return to home
+BOOKING SCREEN
+    ├─→ Confirm Booking → RIDE STATUS SCREEN
+    └─→ Back/Cancel → HOME SCREEN
 
-LOADING STATES:
+RIDE STATUS SCREEN
+    ├─→ Continue to Flight → RIDE IN PROGRESS SCREEN
+    └─→ Cancel Booking → HOME SCREEN
 
-1. SPLASH SCREEN
-   └─ Animated dots (loading indicator)
+RIDE IN PROGRESS SCREEN
+    ├─→ Complete Flight → RIDE SUMMARY SCREEN
+    ├─→ SOS/Emergency → SOS SCREEN
+    └─→ (Back to Flight from SOS) → RIDE IN PROGRESS SCREEN
 
-2. BOOKING CONFIRMATION
-   └─ Button loading state (implied)
+RIDE SUMMARY SCREEN
+    ├─→ Book Another Flight → HOME SCREEN
+    └─→ Download Receipt → (Receipt file)
 
-3. RIDE STATUS
-   └─ Live ETA pulsing dot
+BOOKING HISTORY SCREEN
+    ├─→ Download Receipt → (Receipt file)
+    ├─→ Home (nav) → HOME SCREEN
+    └─→ Profile (nav) → PROFILE SCREEN
 
-4. RIDE IN PROGRESS
-   └─ Animated airplane movement
-   └─ Real-time stat updates
+PROFILE SCREEN
+    ├─→ Logout → LOGIN SCREEN
+    ├─→ Settings → (Future: SETTINGS PAGE)
+    ├─→ Notifications → (Future: NOTIFICATIONS PAGE)
+    ├─→ Safety & Privacy → (Future: PRIVACY PAGE)
+    ├─→ Rewards → (Future: REWARDS PAGE)
+    ├─→ Home (nav) → HOME SCREEN
+    └─→ History (nav) → BOOKING HISTORY SCREEN
 
-STATUS INDICATORS:
-
-┌─────────────────┐
-│  Success (Green)│
-│  ✓ On Time      │
-│  ✓ Safe         │
-└─────────────────┘
-
-┌─────────────────┐
-│  Warning (Red)  │
-│  🚨 Emergency   │
-│  ⚠ Cancelled    │
-└─────────────────┘
-
-┌─────────────────┐
-│  Neutral (Gray) │
-│  ○ Pending      │
-│  ○ Historical   │
-└─────────────────┘
+SOS SCREEN (Full Page)
+    └─→ Back to Flight → RIDE IN PROGRESS SCREEN
 ```
 
 ---
 
-## 1️⃣2️⃣ Complete Journey Timeline
+# PART 5: DATA & INFORMATION REQUIREMENTS
 
+## Information Displayed on Each Screen
+
+### Home Screen Data
+- User greeting name (e.g., "Traveler")
+- Current location name
+- Nearest available aircraft info:
+  - Aircraft ID (e.g., "Bird #42")
+  - Distance (e.g., "2.3 km")
+  - Time estimate (e.g., "4 min")
+  - Status (Ready)
+
+### Booking Screen Data
+- From location (editable selection)
+- To location (editable selection)
+- Distance between locations (e.g., "12.5 km")
+- Estimated flight time (e.g., "15 minutes")
+- Service fee (e.g., "₹150")
+- Base fare/subtotal (e.g., "₹2,850")
+- Total price (e.g., "₹3,000")
+
+### Ride Status Screen Data
+- Flight ID assignment (e.g., "Flight #42")
+- Distance from user (e.g., "1.2 km")
+- Time to arrival (e.g., "4 minutes")
+- Current status (Live, On Time, etc.)
+
+### Ride In Progress Screen Data
+- Flight ID and altitude (e.g., "Bird #42 • 250m")
+- Time remaining (e.g., "8 min")
+- Current speed (e.g., "95 km/h")
+- Distance remaining (e.g., "6.2 km")
+- Current altitude (e.g., "250 m")
+- Overall flight status (Safe, Operational, etc.)
+
+### Ride Summary Screen Data
+- Route summary (From → To)
+- Distance traveled (e.g., "12.5 km")
+- Duration (e.g., "15 minutes")
+- Average speed (e.g., "92 km/h")
+- Base fare (e.g., "₹2,850")
+- Service fee (e.g., "₹150")
+- Total paid (e.g., "₹3,000")
+
+### SOS Screen Data
+- Emergency contact number
+- User's GPS coordinates
+- Aircraft/Flight ID
+- Emergency status message
+
+### Booking History Screen Data
+For each booking:
+- Route (From → To)
+- Date of booking
+- Status (Completed, Cancelled, etc.)
+- Duration
+- Distance
+- Cost
+- Receipt availability
+
+### Profile Screen Data
+- User name
+- User email
+- Total flights completed
+- User rating
+- Membership status/tier
+- Menu options for settings
+
+---
+
+# PART 6: CRITICAL MANDATORY FEATURES
+
+## Must-Have Functionality
+
+### 1. Authentication
+- ✓ Google sign-in option
+- ✓ WhatsApp OTP login option
+- ✓ Successful login → HOME SCREEN
+
+### 2. Booking System
+- ✓ From/To location selection
+- ✓ Swap locations functionality
+- ✓ Real-time price calculation
+- ✓ Trip details display
+- ✓ Booking confirmation
+
+### 3. Flight Tracking
+- ✓ Real-time distance updates
+- ✓ Time to arrival updates
+- ✓ Live route visualization
+- ✓ Flight statistics display
+
+### 4. Emergency System
+- ✓ Easy SOS button access
+- ✓ Emergency contact display
+- ✓ Location sharing
+- ✓ Emergency instructions
+
+### 5. User Management
+- ✓ Profile viewing
+- ✓ Booking history display
+- ✓ Receipt download capability
+- ✓ Account logout
+
+### 6. Navigation
+- ✓ Bottom navigation bar (Home, History, Profile)
+- ✓ Proper screen transitions
+- ✓ Back navigation support
+
+### 7. Visual Feedback
+- ✓ Animated transitions between screens
+- ✓ Hover effects on interactive elements
+- ✓ Status indicators (success, warning, error)
+- ✓ Loading states
+
+---
+
+# PART 7: USER JOURNEY SCENARIOS
+
+## Complete User Flows
+
+### Scenario 1: New User - First Flight Booking
 ```
-USER JOURNEY TIMELINE:
+Step 1: User opens app → SPLASH SCREEN (welcome animation)
+Step 2: User taps "Get Started" → LOGIN SCREEN
+Step 3: User signs in with Google/WhatsApp → HOME SCREEN
+Step 4: User views available flights and taps "Book a Flight" → BOOKING SCREEN
+Step 5: User confirms booking → RIDE STATUS SCREEN (tracking begins)
+Step 6: User taps "Continue to Flight" → RIDE IN PROGRESS SCREEN
+Step 7: User monitors real-time flight data
+Step 8: User taps "Complete Flight" → RIDE SUMMARY SCREEN
+Step 9: User downloads receipt and taps "Book Another Flight" → HOME SCREEN
+```
 
-T=0s    ┌─ User Opens App
-        └─ SplashScreen appears with animations
-          (2-3 seconds duration for onboarding)
+### Scenario 2: Emergency During Flight
+```
+Step 1: User is on RIDE IN PROGRESS SCREEN
+Step 2: User taps "SOS / Emergency" button
+Step 3: SOS modal or full screen appears with red alert
+Step 4: Emergency services are alerted
+Step 5: User sees emergency contact, location, and instructions
+Step 6: User taps "Back to Flight" → Returns to RIDE IN PROGRESS SCREEN
+```
 
-T=3s    ┌─ User clicks "Get Started"
-        └─ Transition to LoginScreen
-          Spring animation: 300ms
+### Scenario 3: View Booking History & Download Receipt
+```
+Step 1: User is on HOME SCREEN
+Step 2: User taps History icon (bottom nav) → BOOKING HISTORY SCREEN
+Step 3: User sees list of past bookings
+Step 4: User taps "Download Receipt" on a booking → Receipt downloads
+Step 5: User can return to HOME or tap Profile icon → PROFILE SCREEN
+```
 
-T=4s    ┌─ LoginScreen displayed
-        └─ Google / WhatsApp options
-
-T=5s    ┌─ User selects login method
-        └─ Transition to HomeScreen
-          Spring animation: 300ms
-
-T=6s    ┌─ HomeScreen with location & availability
-        └─ Navigation bar appears
-
-T=10s   ┌─ User clicks "Book a Flight"
-        └─ Transition to BookingScreen
-          Spring animation: 300ms
-
-T=11s   ┌─ BookingScreen shows route details
-        └─ User can swap locations
-
-T=13s   ┌─ User clicks "Confirm Booking"
-        └─ Transition to RideStatusScreen
-          Spring animation: 300ms
-
-T=14s   ┌─ RideStatusScreen: "Your Bird is Arriving"
-        └─ Live tracker shows airplane approaching
-
-T=17s   ┌─ User clicks "Continue to Flight"
-        └─ Transition to RideInProgressScreen
-          Spring animation: 300ms
-
-T=18s   ┌─ RideInProgressScreen: Flight Active
-        └─ Shows real-time stats & route
-
-T=35s   ┌─ Flight completes (simulated 15-20 min flight)
-        └─ User clicks "Complete Flight"
-
-T=36s   ┌─ Transition to RideSummaryScreen
-        └─ Spring animation: 300ms
-
-T=37s   ┌─ Summary displayed with celebration animation
-        └─ Can download receipt or book another
-
-T=40s   ┌─ User clicks "Book Another Flight"
-        └─ Back to HomeScreen
-          Navigation bar visible
-          Booking added to history
-
-TOTAL TIME: ~40 seconds for complete user journey
-ACTUAL BOOKING TIME: 15 minutes (simulated)
+### Scenario 4: Manage Profile & Logout
+```
+Step 1: User is on HOME SCREEN
+Step 2: User taps Profile icon (bottom nav) → PROFILE SCREEN
+Step 3: User views profile info and statistics
+Step 4: User can tap Settings/Notifications/Safety/Rewards (future features)
+Step 5: User taps "Logout" button → LOGIN SCREEN (session ends)
 ```
 
 ---
 
-This comprehensive visualization guide shows how every screen connects, animates, and transforms user interactions into meaningful experiences in the Shipra air mobility app.
+# PART 8: SUMMARY TABLE
+
+## All 10 Screens at a Glance
+
+| # | Screen Name | Purpose | Key Actions | Next Screen(s) |
+|---|------------|---------|-------------|----------------|
+| 1 | Splash | Onboarding & branding | Get Started | Login |
+| 2 | Login | User authentication | Google/WhatsApp sign-in | Home |
+| 3 | Home | Main dashboard & booking hub | Book flight / History / Profile | Booking / History / Profile |
+| 4 | Booking | Route selection & pricing | Swap locations / Confirm | Ride Status |
+| 5 | Ride Status | Arrival tracking | Continue / Cancel | Ride In Progress / Home |
+| 6 | Ride In Progress | Active flight monitoring | Complete / SOS | Ride Summary / SOS |
+| 7 | SOS | Emergency response | Report emergency / Back | Ride In Progress |
+| 8 | Ride Summary | Trip completion & receipt | Download / Book Another | Home |
+| 9 | Booking History | Past trips review | Download Receipt | Home / Profile |
+| 10 | Profile | Account management | Settings / Logout | Settings (future) / Login |
+
+---
+
+# PART 9: DESIGN SPECIFICATIONS (Visual)
+
+## Screen Layout Constraints
+- **Device**: Mobile (Mobile-first design)
+- **Max Width**: ~448px (typical mobile width)
+- **Orientation**: Portrait
+- **Safe Areas**: Consideration for notches and bottom nav
+
+## Color Usage
+
+### Semantic Colors
+- **Primary (Blue)**: Main actions, buttons, active states
+- **Accent (Orange)**: Highlights, CTAs, emphasis
+- **Success (Green)**: Status confirmations, success badges
+- **Destructive (Red)**: Emergency alerts, danger states, logout
+- **Background**: Light mode (white), dark mode (dark gray)
+- **Foreground**: Text colors (black/white based on mode)
+- **Muted**: Secondary text, disabled states
+- **Card**: Card/container backgrounds
+
+## Typography
+
+### Heading Hierarchy
+- **Screen Title**: Large, bold (24-48px)
+- **Section Heading**: Medium, bold (18-24px)
+- **Body Text**: Regular (14-18px)
+- **Caption**: Small, muted (12-14px)
+
+### Font Families
+- **Headings**: Bold weight
+- **Body**: Regular weight
+- **Emphasis**: Can use accent colors or weight
+
+---
+
+# CONCLUSION
+
+This document provides a complete product requirements overview of the Shipra air mobility application, including:
+
+1. **10 interactive screens** with detailed content specifications
+2. **Complete navigation paths** showing all screen transitions
+3. **User journeys** for common scenarios
+4. **Mandatory data and features** required for functionality
+5. **Visual and interaction specifications** for each screen
+6. **Information architecture** and data requirements
+
+All information is presented from a **user-perspective** and **product-focused** lens, without technical implementation details.

@@ -12,6 +12,10 @@ import HistoryScreen from './src/screens/HistoryScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import BookingScreen from './src/screens/BookingScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import RideStatusScreen from './src/screens/RideStatusScreen';
+import RideInProgressScreen from './src/screens/RideInProgressScreen';
+import RideSummaryScreen from './src/screens/RideSummaryScreen';
+import SOSScreen from './src/screens/SOSScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 export type RootStackParamList = {
@@ -22,6 +26,10 @@ export type RootStackParamList = {
   History: undefined;
   Profile: undefined;
   Booking: { from: string; to: string };
+  RideStatus: { bookingId: string };
+  RideInProgress: { bookingId: string };
+  RideSummary: { bookingId: string };
+  SOS: { bookingId: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -58,6 +66,10 @@ const RootStack = () => {
             <Stack.Screen name="History" component={HistoryScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Booking" component={BookingScreen} />
+            <Stack.Screen name="RideStatus" component={RideStatusScreen} />
+            <Stack.Screen name="RideInProgress" component={RideInProgressScreen} />
+            <Stack.Screen name="RideSummary" component={RideSummaryScreen} />
+            <Stack.Screen name="SOS" component={SOSScreen} />
           </>
         )}
       </Stack.Navigator>
