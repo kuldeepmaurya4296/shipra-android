@@ -11,17 +11,43 @@ type Props = StackScreenProps<RootStackParamList, 'Booking'>;
 export default function BookingScreen({ route, navigation }: Props) {
     const { from, to } = route.params;
     const [loading, setLoading] = useState(false);
+    const [birds, setBirds] = useState<any[]>([]);
+    const [selectedBird, setSelectedBird] = useState<any>(null);
+
+    React.useEffect(() => {
+        fetchBirds();
+    }, []);
+
+    const fetchBirds = async () => {
+        try {
+            // Hardcoded URL fallback if client doesn't work out of box with full URL, but client has base URL
+            // using client.get('/birds') is better
+            const response = await client.get('/birds');
+            setBirds(response.data);
+            if (response.data.length > 0) {
+                setSelectedBird(response.data[0]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch birds', error);
+        }
+    };
 
     const handleConfirmBooking = async () => {
+        if (!selectedBird) {
+            Alert.alert('Error', 'Please select a bird.');
+            return;
+        }
+
         setLoading(true);
         try {
             const bookingData = {
-                flightNumber: "SH-" + Math.floor(1000 + Math.random() * 9000),
+                flightNumber: selectedBird.model + "-" + Math.floor(100 + Math.random() * 900),
                 from: from,
                 to: to,
                 date: new Date().toISOString(),
-                amount: 1500,
-                status: 'confirmed'
+                amount: 1500 + (selectedBird.capacity * 100), // Dynamic pricing based on bird
+                status: 'confirmed',
+                birdId: selectedBird._id
             };
 
             await client.post('/bookings', bookingData);
@@ -70,6 +96,44 @@ export default function BookingScreen({ route, navigation }: Props) {
                     </View>
                 </View>
 
+                {/* Bird Selection */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Select Your Bird</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {birds.map((bird) => (
+                            <TouchableOpacity
+                                key={bird._id}
+                                style={{
+                                    backgroundColor: selectedBird?._id === bird._id ? colors.primary : '#f3f4f6',
+                                    padding: 16,
+                                    borderRadius: 16,
+                                    marginRight: 12,
+                                    width: 140,
+                                    borderWidth: 1,
+                                    borderColor: selectedBird?._id === bird._id ? colors.primary : 'transparent',
+                                }}
+                                onPress={() => setSelectedBird(bird)}
+                            >
+                                <Text style={{
+                                    color: selectedBird?._id === bird._id ? '#fff' : colors.foreground,
+                                    fontWeight: 'bold',
+                                    marginBottom: 4
+                                }}>{bird.name}</Text>
+                                <Text style={{
+                                    color: selectedBird?._id === bird._id ? 'rgba(255,255,255,0.8)' : colors.mutedForeground,
+                                    fontSize: 12
+                                }}>{bird.model}</Text>
+                                <Text style={{
+                                    color: selectedBird?._id === bird._id ? 'rgba(255,255,255,0.8)' : colors.mutedForeground,
+                                    fontSize: 10,
+                                    marginTop: 8
+                                }}>{bird.range} Range</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+
+                {/* Initial Journey Details Card removed or merged? matching existing structure */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Journey Details</Text>
                     <View style={styles.row}>
@@ -105,7 +169,9 @@ export default function BookingScreen({ route, navigation }: Props) {
 
                     <View style={styles.priceRow}>
                         <Text style={styles.priceLabel}>Bird Fare</Text>
-                        <Text style={styles.priceValue}>₹1,500</Text>
+                        <Text style={styles.priceValue}>
+                            ₹{selectedBird ? (1500 + (selectedBird.capacity * 100)).toLocaleString() : '---'}
+                        </Text>
                     </View>
                 </View>
 
@@ -118,9 +184,9 @@ export default function BookingScreen({ route, navigation }: Props) {
                 </View>
 
                 <TouchableOpacity
-                    style={[styles.confirmButton, loading && styles.disabledButton]}
+                    style={[styles.confirmButton, (loading || !selectedBird) && styles.disabledButton]}
                     onPress={handleConfirmBooking}
-                    disabled={loading}
+                    disabled={loading || !selectedBird}
                 >
                     {loading ? (
                         <ActivityIndicator color="#fff" />

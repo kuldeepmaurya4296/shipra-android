@@ -10,7 +10,7 @@ import { Mail, Lock } from 'lucide-react-native';
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-    const { login } = useAuth();
+    const { login, socialLogin } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -27,6 +27,30 @@ export default function LoginScreen({ navigation }: Props) {
         } catch (error: any) {
             const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
             Alert.alert('Error', message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSocialLogin = async (provider: 'google' | 'whatsapp') => {
+        setLoading(true);
+        try {
+            // Simulate API/SDK delay
+            await new Promise(resolve => setTimeout(() => resolve(undefined), 1500));
+
+            // In a real app, this would come from the SDK
+            const mockUser = {
+                email: provider === 'google' ? 'google_user@example.com' : 'whatsapp_user@example.com',
+                name: provider === 'google' ? 'Google User' : 'WhatsApp User'
+            };
+
+            await socialLogin(mockUser.email, mockUser.name, provider);
+        } catch (error: any) {
+            // If socialLogin is not explicitly on the context type derived in useAuth (it might need a refresh), fallback or handle error
+            // Actually I updated the context type, so it should be fine.
+            // Wait, destructuring `login` from useAuth gives me just login. I need `socialLogin` from useAuth.
+            console.error(error);
+            Alert.alert('Error', `${provider} login failed`);
         } finally {
             setLoading(false);
         }
@@ -98,11 +122,19 @@ export default function LoginScreen({ navigation }: Props) {
                         </View>
 
                         <View style={styles.socialButtons}>
-                            <TouchableOpacity style={styles.socialButton}>
+                            <TouchableOpacity
+                                style={styles.socialButton}
+                                onPress={() => handleSocialLogin('google')}
+                                disabled={loading}
+                            >
                                 <Text style={styles.buttonEmoji}>🔤</Text>
                                 <Text style={styles.socialButtonText}>Google</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.socialButton}>
+                            <TouchableOpacity
+                                style={styles.socialButton}
+                                onPress={() => handleSocialLogin('whatsapp')}
+                                disabled={loading}
+                            >
                                 <Text style={styles.buttonEmoji}>💬</Text>
                                 <Text style={styles.socialButtonText}>WhatsApp</Text>
                             </TouchableOpacity>

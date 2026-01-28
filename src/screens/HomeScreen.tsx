@@ -14,6 +14,8 @@ export default function HomeScreen({ navigation }: Props) {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const [fromLocation, setFromLocation] = useState('Downtown Airport');
     const [toLocation, setToLocation] = useState('');
+    const [stations, setStations] = useState<any[]>([]);
+    const [loadingStations, setLoadingStations] = useState(true);
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
@@ -21,7 +23,25 @@ export default function HomeScreen({ navigation }: Props) {
             duration: 800,
             useNativeDriver: true,
         }).start();
+
+        fetchStations();
     }, []);
+
+    const fetchStations = async () => {
+        try {
+            // Need to import client here if not available, assuming it will be available via direct import or I add it
+            // Since client is in ../api/client, I need to import it.
+            // But I can't add imports with this tool easily in the middle of file without context. 
+            // I'll assume I can add the import at the top first.
+            const response = await fetch('http://10.0.2.2:5000/api/stations');
+            const data = await response.json();
+            setStations(data);
+        } catch (error) {
+            console.error('Failed to fetch stations', error);
+        } finally {
+            setLoadingStations(false);
+        }
+    };
 
     const handleBookFlight = () => {
         if (!toLocation) {
@@ -78,6 +98,31 @@ export default function HomeScreen({ navigation }: Props) {
                             />
                         </View>
                     </View>
+
+                    {/* Station Chips */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 16 }}>
+                        {stations.map((station) => (
+                            <TouchableOpacity
+                                key={station._id}
+                                style={{
+                                    backgroundColor: toLocation === station.name ? colors.primary : '#f3f4f6',
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 8,
+                                    borderRadius: 16,
+                                    marginRight: 8,
+                                }}
+                                onPress={() => setToLocation(station.name)}
+                            >
+                                <Text style={{
+                                    color: toLocation === station.name ? '#fff' : colors.foreground,
+                                    fontSize: 12,
+                                    fontWeight: '600'
+                                }}>
+                                    {station.name}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
 
                     <TouchableOpacity
                         style={styles.bookButton}

@@ -10,6 +10,8 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 const authRoutes = require('./src/routes/auth');
 const bookingRoutes = require('./src/routes/bookings');
 const userRoutes = require('./src/routes/users');
+const stationRoutes = require('./src/routes/stations');
+const birdRoutes = require('./src/routes/birds');
 
 const app = express();
 
@@ -21,6 +23,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/stations', stationRoutes);
+app.use('/api/birds', birdRoutes);
 console.log("mongodb uri: ", process.env.MONGODB_URI);
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)

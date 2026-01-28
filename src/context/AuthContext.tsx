@@ -14,6 +14,7 @@ interface AuthContextType {
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
     register: (name: string, email: string, password: string) => Promise<void>;
+    socialLogin: (email: string, name: string, provider: 'google' | 'whatsapp') => Promise<void>;
     updateProfile: (name: string) => Promise<void>;
     logout: () => Promise<void>;
 }
@@ -62,6 +63,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userData);
     };
 
+    const socialLogin = async (email: string, name: string, provider: 'google' | 'whatsapp') => {
+        const response = await client.post('/auth/social-login', { email, name, provider });
+        const { token, user: userData } = response.data;
+        await AsyncStorage.setItem('auth_token', token);
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
+        setToken(token);
+        setUser(userData);
+    };
+
     const updateProfile = async (name: string) => {
         const response = await client.put('/users/me', { name });
         const userData = response.data;
@@ -77,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, updateProfile, logout }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, socialLogin, updateProfile, logout }}>
             {children}
         </AuthContext.Provider>
     );
