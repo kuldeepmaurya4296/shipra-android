@@ -78,12 +78,23 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.shipraapp"
+
+    // Load .env file
+    def envFile = rootProject.file("../.env")
+    def env = new Properties()
+    if (envFile.exists()) {
+        env.load(new FileInputStream(envFile))
+    }
+
     defaultConfig {
         applicationId "com.shipraapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        
+        // Inject Google Maps API Key from .env
+        manifestPlaceholders = [GOOGLE_MAPS_API_KEY: env.get('GOOGLE_MAPS_API_KEY') ?: ""]
     }
     signingConfigs {
         debug {

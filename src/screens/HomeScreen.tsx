@@ -14,16 +14,21 @@ type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const [fromLocation, setFromLocation] = useState('Downtown Airport');
+    const [fromLocation, setFromLocation] = useState('Bhopal');
     const [toLocation, setToLocation] = useState('');
     const [stations, setStations] = useState<any[]>([]);
     const [birds, setBirds] = useState<any[]>([]);
     const [loadingStations, setLoadingStations] = useState(true);
 
-    // Default region (New Delhi approximate)
+    const [filteredFromStations, setFilteredFromStations] = useState<any[]>([]);
+    const [filteredToStations, setFilteredToStations] = useState<any[]>([]);
+    const [showFromSuggestions, setShowFromSuggestions] = useState(false);
+    const [showToSuggestions, setShowToSuggestions] = useState(false);
+
+    // Default region (Bhopal)
     const [region, setRegion] = useState({
-        latitude: 28.6139,
-        longitude: 77.2090,
+        latitude: 23.2599,
+        longitude: 77.4126,
         latitudeDelta: 0.2,
         longitudeDelta: 0.2,
     });
@@ -55,6 +60,42 @@ export default function HomeScreen({ navigation }: Props) {
         }
     };
 
+    const filterStations = (text: string, type: 'from' | 'to') => {
+        if (!text) {
+            if (type === 'from') {
+                setFilteredFromStations([]);
+                setShowFromSuggestions(false);
+            } else {
+                setFilteredToStations([]);
+                setShowToSuggestions(false);
+            }
+            return;
+        }
+
+        const filtered = stations.filter(station =>
+            station.name.toLowerCase().includes(text.toLowerCase()) ||
+            station.city.toLowerCase().includes(text.toLowerCase())
+        );
+
+        if (type === 'from') {
+            setFilteredFromStations(filtered);
+            setShowFromSuggestions(true);
+        } else {
+            setFilteredToStations(filtered);
+            setShowToSuggestions(true);
+        }
+    };
+
+    const handleSelectStation = (stationName: string, type: 'from' | 'to') => {
+        if (type === 'from') {
+            setFromLocation(stationName);
+            setShowFromSuggestions(false);
+        } else {
+            setToLocation(stationName);
+            setShowToSuggestions(false);
+        }
+    };
+
     const handleBookFlight = () => {
         if (!toLocation) {
             Alert.alert('Selection Required', 'Please enter your destination.');
@@ -67,8 +108,8 @@ export default function HomeScreen({ navigation }: Props) {
         if (birds.length > 0 && mapRef.current) {
             // Calculate bounding box for all birds
             const coords = birds.map(b => ({
-                latitude: b.location ? b.location.lat : 28.6139,
-                longitude: b.location ? b.location.lng : 77.2090
+                latitude: b.location ? b.location.lat : 23.2599,
+                longitude: b.location ? b.location.lng : 77.4126
             }));
 
             mapRef.current.fitToCoordinates(coords, {
@@ -96,41 +137,79 @@ export default function HomeScreen({ navigation }: Props) {
                 </Animated.View>
             </LinearGradient>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 {/* Search / Route Selection Card */}
                 <Animated.View style={[styles.searchCard, { opacity: fadeAnim }]}>
                     <Text style={styles.cardTitle}>Plan Your Route</Text>
 
                     <View style={styles.inputGroup}>
-                        <View style={styles.inputWrapper}>
-                            <PlaneTakeoff size={20} color={colors.primary} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="From"
-                                value={fromLocation}
-                                onChangeText={setFromLocation}
-                                placeholderTextColor={colors.mutedForeground}
-                            />
+                        <View style={{ zIndex: 20 }}>
+                            <View style={styles.inputWrapper}>
+                                <PlaneTakeoff size={20} color={colors.primary} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="From"
+                                    value={fromLocation}
+                                    onChangeText={(text) => {
+                                        setFromLocation(text);
+                                        filterStations(text, 'from');
+                                    }}
+                                    onFocus={() => filterStations(fromLocation, 'from')}
+                                    placeholderTextColor={colors.mutedForeground}
+                                />
+                            </View>
+                            {showFromSuggestions && filteredFromStations.length > 0 && (
+                                <View style={styles.suggestionsContainer}>
+                                    {filteredFromStations.map((station) => (
+                                        <TouchableOpacity
+                                            key={station._id}
+                                            style={styles.suggestionItem}
+                                            onPress={() => handleSelectStation(station.name, 'from')}
+                                        >
+                                            <Text style={styles.suggestionText}>{station.name} ({station.city})</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
                         </View>
 
                         <View style={styles.routeLine}>
                             <View style={styles.verticalLine} />
                         </View>
 
-                        <View style={styles.inputWrapper}>
-                            <PlaneLanding size={20} color={colors.accent} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Where to?"
-                                value={toLocation}
-                                onChangeText={setToLocation}
-                                placeholderTextColor={colors.mutedForeground}
-                            />
+                        <View style={{ zIndex: 10 }}>
+                            <View style={styles.inputWrapper}>
+                                <PlaneLanding size={20} color={colors.accent} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Where to?"
+                                    value={toLocation}
+                                    onChangeText={(text) => {
+                                        setToLocation(text);
+                                        filterStations(text, 'to');
+                                    }}
+                                    onFocus={() => filterStations(toLocation, 'to')}
+                                    placeholderTextColor={colors.mutedForeground}
+                                />
+                            </View>
+                            {showToSuggestions && filteredToStations.length > 0 && (
+                                <View style={styles.suggestionsContainer}>
+                                    {filteredToStations.map((station) => (
+                                        <TouchableOpacity
+                                            key={station._id}
+                                            style={styles.suggestionItem}
+                                            onPress={() => handleSelectStation(station.name, 'to')}
+                                        >
+                                            <Text style={styles.suggestionText}>{station.name} ({station.city})</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
                         </View>
                     </View>
 
                     {/* Station Chips */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 16 }}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 16 }} keyboardShouldPersistTaps="handled">
                         {stations.map((station) => (
                             <TouchableOpacity
                                 key={station._id}
@@ -425,6 +504,34 @@ const styles = StyleSheet.create({
     },
     birdName: {
         fontWeight: '600',
+        color: colors.foreground,
+    },
+    suggestionsContainer: {
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderTopWidth: 0,
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        maxHeight: 200,
+        position: 'absolute',
+        top: 54, // Adjust based on input height
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+    },
+    suggestionItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    suggestionText: {
+        fontSize: 14,
         color: colors.foreground,
     },
 });

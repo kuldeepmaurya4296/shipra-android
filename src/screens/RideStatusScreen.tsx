@@ -4,7 +4,7 @@ import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { Plane, Clock, MapPin, Navigation, Info } from 'lucide-react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 type Props = StackScreenProps<RootStackParamList, 'RideStatus'>;
 
@@ -34,19 +34,27 @@ export default function RideStatusScreen({ navigation, route }: Props) {
 
             {/* Tracker Map Area */}
             <View style={styles.mapContainer}>
-                <LinearGradient
-                    colors={['rgba(79, 70, 229, 0.05)', 'rgba(99, 102, 241, 0.1)']}
-                    style={styles.mapBackground}
+                <MapView
+                    provider={PROVIDER_GOOGLE}
+                    style={StyleSheet.absoluteFillObject}
+                    initialRegion={{
+                        latitude: 23.2599,
+                        longitude: 77.4126,
+                        latitudeDelta: 0.05,
+                        longitudeDelta: 0.05,
+                    }}
                 >
-                    <View style={styles.trackerPath}>
-                        <View style={styles.pathLine} />
+                    <Marker
+                        coordinate={{ latitude: 23.2599, longitude: 77.4126 }}
+                        title="Bird #42"
+                        description="Arriving in 4 mins"
+                    >
                         <View style={styles.trackerIconContainer}>
-                            <Plane size={32} color={colors.primary} style={{ transform: [{ rotate: '45deg' }] }} />
+                            <Plane size={24} color={colors.primary} style={{ transform: [{ rotate: '-45deg' }] }} />
                         </View>
-                        <View style={styles.destinationDot} />
-                    </View>
-                    <Text style={styles.mapLabel}>LIVE TRACKING</Text>
-                </LinearGradient>
+                    </Marker>
+                </MapView>
+                <Text style={styles.mapLabel}>LIVE TRACKING</Text>
             </View>
 
             <View style={styles.statsContainer}>

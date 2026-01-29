@@ -1,19 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock } from 'lucide-react-native';
+import { Mail, Lock, Phone, KeyRound, ArrowLeft } from 'lucide-react-native';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-    const { login, socialLogin } = useAuth();
+    const { login, socialLogin, requestOtp, loginWithOtp } = useAuth();
+
+    // Email Login State
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    // WhatsApp/OTP State
+    const [isWhatsAppLogin, setIsWhatsAppLogin] = useState(false);
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [otp, setOtp] = useState('');
+    const [otpSent, setOtpSent] = useState(false);
+
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        try {
+            GoogleSignin.configure({
+                // You would normally put your webClientId here from Firebase/Google Console
+                // webClientId: 'YOUR_WEB_CLIENT_ID', 
+                offlineAccess: true
+            });
+        } catch (e) {
+            console.error('Google Signin configure error', e);
+        }
+    }, []);
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -32,25 +54,64 @@ export default function LoginScreen({ navigation }: Props) {
         }
     };
 
-    const handleSocialLogin = async (provider: 'google' | 'whatsapp') => {
+    const handleSendOtp = async () => {
+        if (!phoneNumber || phoneNumber.length < 10) {
+            Alert.alert('Error', 'Please enter a valid phone number');
+            return;
+        }
         setLoading(true);
         try {
-            // Simulate API/SDK delay
-            await new Promise(resolve => setTimeout(() => resolve(undefined), 1500));
-
-            // In a real app, this would come from the SDK
-            const mockUser = {
-                email: provider === 'google' ? 'google_user@example.com' : 'whatsapp_user@example.com',
-                name: provider === 'google' ? 'Google User' : 'WhatsApp User'
-            };
-
-            await socialLogin(mockUser.email, mockUser.name, provider);
+            await requestOtp(phoneNumber);
+            setOtpSent(true);
+            Alert.alert('Success', 'OTP sent to your WhatsApp number');
         } catch (error: any) {
-            // If socialLogin is not explicitly on the context type derived in useAuth (it might need a refresh), fallback or handle error
-            // Actually I updated the context type, so it should be fine.
-            // Wait, destructuring `login` from useAuth gives me just login. I need `socialLogin` from useAuth.
-            console.error(error);
-            Alert.alert('Error', `${provider} login failed`);
+            const message = error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.';
+            Alert.alert('Error', message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!otp || otp.length < 6) {
+            Alert.alert('Error', 'Please enter a valid 6-digit OTP');
+            return;
+        }
+        setLoading(true);
+        try {
+            await loginWithOtp(phoneNumber, otp);
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Invalid OTP. Please check and try again.';
+            Alert.alert('Error', message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        try {
+            await GoogleSignin.hasPlayServices();
+            const userInfo = await GoogleSignin.signIn();
+
+            // Check if data exists (handling new response structure)
+            if (userInfo.data) {
+                const { idToken, user } = userInfo.data;
+                await socialLogin(user.email, user.name || 'Google User', 'google');
+            } else {
+                throw new Error('No user data returned from Google Sign-In');
+            }
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                // user cancelled the login flow
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                // operation (e.g. sign in) is in progress already
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                Alert.alert('Error', 'Play Services not available');
+            } else {
+                console.error(error);
+                Alert.alert('Error', 'Google Sign-In failed: ' + error.message);
+            }
         } finally {
             setLoading(false);
         }
@@ -68,77 +129,140 @@ export default function LoginScreen({ navigation }: Props) {
                 >
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={styles.header}>
-                            <Text style={styles.title}>Welcome Back</Text>
-                            <Text style={styles.subtitle}>Sign in to continue your journey</Text>
+                            {isWhatsAppLogin && (
+                                <TouchableOpacity onPress={() => setIsWhatsAppLogin(false)} style={{ marginBottom: 16 }}>
+                                    <ArrowLeft size={24} color={colors.foreground} />
+                                </TouchableOpacity>
+                            )}
+                            <Text style={styles.title}>{isWhatsAppLogin ? 'WhatsApp Login' : 'Welcome Back'}</Text>
+                            <Text style={styles.subtitle}>
+                                {isWhatsAppLogin ? 'Enter your number to receive an OTP' : 'Sign in to continue your journey'}
+                            </Text>
                         </View>
 
                         <View style={styles.illustrationContainer}>
-                            <Text style={styles.illustrationEmoji}>✈️</Text>
+                            <Text style={styles.illustrationEmoji}>{isWhatsAppLogin ? '💬' : '✈️'}</Text>
                         </View>
 
                         <View style={styles.form}>
-                            <View style={styles.inputContainer}>
-                                <Mail size={20} color={colors.mutedForeground} style={styles.inputIcon} />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Email Address"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    autoCapitalize="none"
-                                    keyboardType="email-address"
-                                    placeholderTextColor={colors.mutedForeground}
-                                />
-                            </View>
+                            {!isWhatsAppLogin ? (
+                                <>
+                                    <View style={styles.inputContainer}>
+                                        <Mail size={20} color={colors.mutedForeground} style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Email Address"
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            autoCapitalize="none"
+                                            keyboardType="email-address"
+                                            placeholderTextColor={colors.mutedForeground}
+                                        />
+                                    </View>
 
-                            <View style={styles.inputContainer}>
-                                <Lock size={20} color={colors.mutedForeground} style={styles.inputIcon} />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Password"
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry
-                                    placeholderTextColor={colors.mutedForeground}
-                                />
-                            </View>
+                                    <View style={styles.inputContainer}>
+                                        <Lock size={20} color={colors.mutedForeground} style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Password"
+                                            value={password}
+                                            onChangeText={setPassword}
+                                            secureTextEntry
+                                            placeholderTextColor={colors.mutedForeground}
+                                        />
+                                    </View>
 
-                            <TouchableOpacity
-                                style={[styles.loginButton, loading && styles.disabledButton]}
-                                onPress={handleLogin}
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <Text style={styles.loginButtonText}>Login</Text>
-                                )}
-                            </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.loginButton, loading && styles.disabledButton]}
+                                        onPress={handleLogin}
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator color="#fff" />
+                                        ) : (
+                                            <Text style={styles.loginButtonText}>Login</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <>
+                                    <View style={styles.inputContainer}>
+                                        <Phone size={20} color={colors.mutedForeground} style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="WhatsApp Number"
+                                            value={phoneNumber}
+                                            onChangeText={setPhoneNumber}
+                                            keyboardType="phone-pad"
+                                            placeholderTextColor={colors.mutedForeground}
+                                            editable={!otpSent}
+                                        />
+                                    </View>
+
+                                    {otpSent && (
+                                        <View style={styles.inputContainer}>
+                                            <KeyRound size={20} color={colors.mutedForeground} style={styles.inputIcon} />
+                                            <TextInput
+                                                style={styles.input}
+                                                placeholder="Enter 6-digit OTP"
+                                                value={otp}
+                                                onChangeText={setOtp}
+                                                keyboardType="number-pad"
+                                                placeholderTextColor={colors.mutedForeground}
+                                                maxLength={6}
+                                            />
+                                        </View>
+                                    )}
+
+                                    {!otpSent ? (
+                                        <TouchableOpacity
+                                            style={[styles.loginButton, loading && styles.disabledButton]}
+                                            onPress={handleSendOtp}
+                                            disabled={loading}
+                                        >
+                                            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Send OTP</Text>}
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <TouchableOpacity
+                                            style={[styles.loginButton, loading && styles.disabledButton]}
+                                            onPress={handleVerifyOtp}
+                                            disabled={loading}
+                                        >
+                                            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Verify & Login</Text>}
+                                        </TouchableOpacity>
+                                    )}
+                                </>
+                            )}
                         </View>
 
-                        <View style={styles.socialSeparator}>
-                            <View style={styles.separatorLine} />
-                            <Text style={styles.separatorText}>OR CONTINUE WITH</Text>
-                            <View style={styles.separatorLine} />
-                        </View>
+                        {!isWhatsAppLogin && (
+                            <>
+                                <View style={styles.socialSeparator}>
+                                    <View style={styles.separatorLine} />
+                                    <Text style={styles.separatorText}>OR CONTINUE WITH</Text>
+                                    <View style={styles.separatorLine} />
+                                </View>
 
-                        <View style={styles.socialButtons}>
-                            <TouchableOpacity
-                                style={styles.socialButton}
-                                onPress={() => handleSocialLogin('google')}
-                                disabled={loading}
-                            >
-                                <Text style={styles.buttonEmoji}>🔤</Text>
-                                <Text style={styles.socialButtonText}>Google</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.socialButton}
-                                onPress={() => handleSocialLogin('whatsapp')}
-                                disabled={loading}
-                            >
-                                <Text style={styles.buttonEmoji}>💬</Text>
-                                <Text style={styles.socialButtonText}>WhatsApp</Text>
-                            </TouchableOpacity>
-                        </View>
+                                <View style={styles.socialButtons}>
+                                    <TouchableOpacity
+                                        style={styles.socialButton}
+                                        onPress={handleGoogleLogin}
+                                        disabled={loading}
+                                    >
+                                        <Text style={styles.buttonEmoji}>🔤</Text>
+                                        <Text style={styles.socialButtonText}>Google</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.socialButton}
+                                        onPress={() => setIsWhatsAppLogin(true)}
+                                        disabled={loading}
+                                    >
+                                        <Text style={styles.buttonEmoji}>💬</Text>
+                                        <Text style={styles.socialButtonText}>WhatsApp</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        )}
 
                         <View style={styles.footer}>
                             <Text style={styles.footerText}>Don't have an account? </Text>

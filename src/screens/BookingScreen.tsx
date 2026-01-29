@@ -1,34 +1,120 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { ArrowLeft, Clock, MapPin, Calendar, CreditCard, Plane } from 'lucide-react-native';
+import { ArrowLeft, Clock, MapPin, Calendar, CreditCard, Ruler, Zap, Plane } from 'lucide-react-native';
 import client from '../api/client';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { RAZORPAY_KEY_ID } from '@env';
+import RazorpayCheckout from 'react-native-razorpay';
 
 type Props = StackScreenProps<RootStackParamList, 'Booking'>;
+
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
+}
+
+function deg2rad(deg: number) {
+    return deg * (Math.PI / 180);
+}
 
 export default function BookingScreen({ route, navigation }: Props) {
     const { from, to } = route.params;
     const [loading, setLoading] = useState(false);
     const [birds, setBirds] = useState<any[]>([]);
     const [selectedBird, setSelectedBird] = useState<any>(null);
+    const [stations, setStations] = useState<any[]>([]);
 
-    React.useEffect(() => {
-        fetchBirds();
+    // Route state
+    const [distance, setDistance] = useState<number>(0);
+    const [duration, setDuration] = useState<number>(0); // in minutes
+    const [fare, setFare] = useState<number>(0);
+
+    // Map Coords
+    const [fromCoord, setFromCoord] = useState<any>(null);
+    const [toCoord, setToCoord] = useState<any>(null);
+    const mapRef = useRef<MapView>(null);
+
+    useEffect(() => {
+        fetchData();
     }, []);
 
-    const fetchBirds = async () => {
+    const fetchData = async () => {
         try {
-            // Hardcoded URL fallback if client doesn't work out of box with full URL, but client has base URL
-            // using client.get('/birds') is better
-            const response = await client.get('/birds');
-            setBirds(response.data);
-            if (response.data.length > 0) {
-                setSelectedBird(response.data[0]);
+            const [birdsRes, stationsRes] = await Promise.all([
+                client.get('/birds'),
+                client.get('/stations')
+            ]);
+
+            setBirds(birdsRes.data);
+            setStations(stationsRes.data);
+
+            if (birdsRes.data.length > 0) {
+                setSelectedBird(birdsRes.data[0]);
             }
+
+            // Find coordinates
+            const fromStation = stationsRes.data.find((s: any) => s.name === from);
+            const toStation = stationsRes.data.find((s: any) => s.name === to);
+
+            if (fromStation?.location && toStation?.location) {
+                setFromCoord({
+                    latitude: fromStation.location.lat,
+                    longitude: fromStation.location.lng
+                });
+                setToCoord({
+                    latitude: toStation.location.lat,
+                    longitude: toStation.location.lng
+                });
+
+                // Calculate Distance
+                const dist = getDistanceFromLatLonInKm(
+                    fromStation.location.lat,
+                    fromStation.location.lng,
+                    toStation.location.lat,
+                    toStation.location.lng
+                );
+
+                setDistance(parseFloat(dist.toFixed(2)));
+
+                // Calculate Time (Speed ~100 km/h average)
+                // 100 km/h = 1.666 km/min
+                // Calculate Time (Speed ~100 km/h average)
+                // 100 km/h = 1.666 km/min
+                const travelTime = (dist / 100) * 60;
+                const totalDuration = Math.ceil(travelTime + 4); // +2 min Takeoff, +2 min Landing
+                setDuration(totalDuration);
+
+                // Calculate Fare: 3000 per 15 min
+                const calculatedFare = (totalDuration / 15) * 3000;
+                setFare(Math.ceil(calculatedFare));
+
+                // Fit map
+                setTimeout(() => {
+                    mapRef.current?.fitToCoordinates([
+                        { latitude: fromStation.location.lat, longitude: fromStation.location.lng },
+                        { latitude: toStation.location.lat, longitude: toStation.location.lng }
+                    ], {
+                        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+                        animated: true
+                    });
+                }, 500);
+            }
+
         } catch (error) {
-            console.error('Failed to fetch birds', error);
+            console.error('Failed to fetch data', error);
+            Alert.alert('Error', 'Failed to load route details');
         }
     };
 
@@ -39,22 +125,48 @@ export default function BookingScreen({ route, navigation }: Props) {
         }
 
         setLoading(true);
+
+        const options = {
+            description: 'Flight Booking #' + Math.floor(1000 + Math.random() * 9000),
+            image: 'https://i.imgur.com/3g7nmJC.png', // Shipra placeholder
+            currency: 'INR',
+            key: RAZORPAY_KEY_ID,
+            amount: fare * 100, // Amount in paise
+            name: 'Shipra Air Mobility',
+            prefill: {
+                email: 'user@shipra.com',
+                contact: '9191919191',
+                name: 'Shipra User'
+            },
+            theme: { color: colors.primary }
+        };
+
         try {
+            const data = await RazorpayCheckout.open(options);
+            // alert(`Payment ID: ${data.razorpay_payment_id}`); // Optional debug
+
+            // Payment Success: Create Booking
             const bookingData = {
                 flightNumber: selectedBird.model + "-" + Math.floor(100 + Math.random() * 900),
                 from: from,
                 to: to,
                 date: new Date().toISOString(),
-                amount: 1500 + (selectedBird.capacity * 100), // Dynamic pricing based on bird
+                amount: fare,
                 status: 'confirmed',
-                birdId: selectedBird._id
+                birdId: selectedBird._id,
+                paymentId: data.razorpay_payment_id
             };
 
             const response = await client.post('/bookings', bookingData);
             navigation.navigate('RideStatus', { bookingId: response.data._id });
+
         } catch (error: any) {
-            console.error('Booking failed', error);
-            Alert.alert('Error', 'Failed to confirm booking. Please try again.');
+            console.error('Payment/Booking failed', error);
+            if (error.code && error.description) {
+                Alert.alert('Payment Failed', error.description);
+            } else {
+                Alert.alert('Error', 'Booking creation failed. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -70,29 +182,96 @@ export default function BookingScreen({ route, navigation }: Props) {
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
-                {/* Route Visualization Card */}
-                <View style={styles.routeCard}>
-                    <View style={styles.flightLine}>
-                        <View style={styles.point} />
-                        <View style={styles.dashedLine} />
-                        <Plane size={20} color={colors.primary} style={{ transform: [{ rotate: '90deg' }] }} />
-                        <View style={styles.dashedLine} />
-                        <View style={[styles.point, { backgroundColor: colors.accent }]} />
+
+                {/* Map Route Visualization */}
+                <View style={styles.mapCard}>
+                    {fromCoord && toCoord ? (
+                        <MapView
+                            ref={mapRef}
+                            provider={PROVIDER_GOOGLE}
+                            style={StyleSheet.absoluteFillObject}
+                            initialRegion={{
+                                latitude: (fromCoord.latitude + toCoord.latitude) / 2,
+                                longitude: (fromCoord.longitude + toCoord.longitude) / 2,
+                                latitudeDelta: Math.abs(fromCoord.latitude - toCoord.latitude) * 2,
+                                longitudeDelta: Math.abs(fromCoord.longitude - toCoord.longitude) * 2,
+                            }}
+                        >
+                            {/* Route Line */}
+                            <Polyline
+                                coordinates={[fromCoord, toCoord]}
+                                strokeWidth={4}
+                                strokeColor={colors.primary}
+                                lineDashPattern={[1]}
+                            />
+
+                            {/* Start/End Markers */}
+                            <Marker coordinate={fromCoord} title={from} description="Departure">
+                                <View style={styles.markerBadge}><Text style={styles.markerText}>A</Text></View>
+                            </Marker>
+                            <Marker coordinate={toCoord} title={to} description="Destination">
+                                <View style={[styles.markerBadge, { backgroundColor: colors.accent }]}><Text style={styles.markerText}>B</Text></View>
+                            </Marker>
+
+                            {/* Bird Markers */}
+                            {birds.map((bird, index) => (
+                                bird.location && (
+                                    <Marker
+                                        key={`bird-${index}`}
+                                        coordinate={{
+                                            latitude: bird.location.lat,
+                                            longitude: bird.location.lng
+                                        }}
+                                        title={bird.name}
+                                        description={bird.model}
+                                        opacity={selectedBird?._id === bird._id ? 1 : 0.6}
+                                        zIndex={selectedBird?._id === bird._id ? 10 : 1}
+                                    >
+                                        <View style={[
+                                            styles.birdMarker,
+                                            selectedBird?._id === bird._id && styles.selectedBirdMarker
+                                        ]}>
+                                            <Plane
+                                                size={selectedBird?._id === bird._id ? 20 : 16}
+                                                color="#fff"
+                                                style={{ transform: [{ rotate: '-45deg' }] }}
+                                            />
+                                        </View>
+                                    </Marker>
+                                )
+                            ))}
+                        </MapView>
+                    ) : (
+                        <View style={styles.mapLoading}>
+                            <ActivityIndicator size="large" color={colors.primary} />
+                            <Text style={{ marginTop: 8, color: colors.mutedForeground }}>Loading Route...</Text>
+                        </View>
+                    )}
+                </View>
+
+                {/* Journey Stats */}
+                <View style={styles.statsRow}>
+                    <View style={styles.statItem}>
+                        <Ruler size={18} color={colors.primary} />
+                        <Text style={styles.statValue}>{distance} km</Text>
+                        <Text style={styles.statLabel}>Distance</Text>
                     </View>
-                    <View style={styles.routeNames}>
-                        <View style={styles.cityInfo}>
-                            <Text style={styles.cityCode}>{from.substring(0, 3).toUpperCase()}</Text>
-                            <Text style={styles.cityName}>{from}</Text>
-                        </View>
-                        <View style={[styles.cityInfo, { alignItems: 'flex-end' }]}>
-                            <Text style={styles.cityCode}>{to.substring(0, 3).toUpperCase()}</Text>
-                            <Text style={styles.cityName}>{to}</Text>
-                        </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Clock size={18} color={colors.primary} />
+                        <Text style={styles.statValue}>{duration} min</Text>
+                        <Text style={styles.statLabel}>Est. Time</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Zap size={18} color={colors.primary} />
+                        <Text style={styles.statValue}>~100 km/h</Text>
+                        <Text style={styles.statLabel}>Avg Speed</Text>
                     </View>
                 </View>
 
                 {/* Bird Selection */}
-                <View style={styles.card}>
+                <View style={[styles.card, { marginTop: 20 }]}>
                     <Text style={styles.cardTitle}>Select Your Bird</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {birds.map((bird) => (
@@ -128,44 +307,22 @@ export default function BookingScreen({ route, navigation }: Props) {
                     </ScrollView>
                 </View>
 
-                {/* Initial Journey Details Card removed or merged? matching existing structure */}
+                {/* Fare Breakdown */}
                 <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Journey Details</Text>
+                    <Text style={styles.cardTitle}>Fare Breakdown</Text>
                     <View style={styles.row}>
-                        <MapPin size={20} color={colors.primary} />
-                        <View>
-                            <Text style={styles.label}>Departure</Text>
-                            <Text style={styles.value}>{from}</Text>
-                        </View>
+                        <Text style={styles.label}>Rate: ₹3000 / 15 min</Text>
+                        <Text style={styles.value}>₹ 3,000</Text>
                     </View>
                     <View style={styles.row}>
-                        <MapPin size={20} color={colors.accent} />
-                        <View>
-                            <Text style={styles.label}>Destination</Text>
-                            <Text style={styles.value}>{to}</Text>
-                        </View>
+                        <Text style={styles.label}>Total Duration (+4m ops)</Text>
+                        <Text style={styles.value}>{duration} mins</Text>
                     </View>
-                </View>
-
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Schedule & Fare</Text>
-                    <View style={styles.infoGrid}>
-                        <View style={styles.infoItem}>
-                            <Calendar size={18} color={colors.mutedForeground} />
-                            <Text style={styles.infoText}>{new Date().toLocaleDateString()}</Text>
-                        </View>
-                        <View style={styles.infoItem}>
-                            <Clock size={18} color={colors.mutedForeground} />
-                            <Text style={styles.infoText}>14:30 PM</Text>
-                        </View>
-                    </View>
-
                     <View style={styles.divider} />
-
                     <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>Bird Fare</Text>
+                        <Text style={styles.priceLabel}>Total Amount</Text>
                         <Text style={styles.priceValue}>
-                            ₹{selectedBird ? (1500 + (selectedBird.capacity * 100)).toLocaleString() : '---'}
+                            ₹{fare.toLocaleString()}
                         </Text>
                     </View>
                 </View>
@@ -222,47 +379,88 @@ const styles = StyleSheet.create({
         padding: 24,
         paddingBottom: 40,
     },
-    routeCard: {
-        backgroundColor: colors.primary,
+    mapCard: {
+        height: 250,
+        backgroundColor: '#e2e8f0',
         borderRadius: 24,
-        padding: 24,
-        marginBottom: 24,
-    },
-    flightLine: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-    },
-    point: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#fff',
-    },
-    dashedLine: {
-        flex: 1,
-        height: 1,
+        overflow: 'hidden',
+        marginBottom: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.4)',
-        borderStyle: 'dashed',
-        marginHorizontal: 10,
+        borderColor: colors.border,
     },
-    routeNames: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    mapLoading: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
-    cityInfo: {
-        gap: 4,
+    markerBadge: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff'
     },
-    cityCode: {
-        fontSize: 24,
-        fontWeight: 'bold',
+    markerText: {
         color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 14
     },
-    cityName: {
+    birdMarker: {
+        backgroundColor: colors.success,
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    selectedBirdMarker: {
+        backgroundColor: colors.primary,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 3,
+        borderColor: '#fff',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.30,
+        shadowRadius: 4.65,
+        elevation: 8,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 16,
+        justifyContent: 'space-between',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    statItem: {
+        alignItems: 'center',
+        flex: 1,
+        gap: 4
+    },
+    statValue: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: colors.foreground
+    },
+    statLabel: {
         fontSize: 12,
-        color: 'rgba(255,255,255,0.8)',
+        color: colors.mutedForeground
+    },
+    statDivider: {
+        width: 1,
+        height: '100%',
+        backgroundColor: colors.border
     },
     card: {
         backgroundColor: '#fff',
@@ -284,11 +482,11 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
-        marginBottom: 16,
+        justifyContent: 'space-between', // Changed to space-between for fare breakdown
+        marginBottom: 12,
     },
     label: {
-        fontSize: 12,
+        fontSize: 14,
         color: colors.mutedForeground,
     },
     value: {
@@ -296,28 +494,10 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: colors.foreground,
     },
-    infoGrid: {
-        flexDirection: 'row',
-        gap: 16,
-    },
-    infoItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: '#f8fafc',
-        padding: 12,
-        borderRadius: 12,
-        flex: 1,
-    },
-    infoText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.foreground,
-    },
     divider: {
         height: 1,
         backgroundColor: colors.border,
-        marginVertical: 16,
+        marginVertical: 12,
     },
     priceRow: {
         flexDirection: 'row',
@@ -326,10 +506,11 @@ const styles = StyleSheet.create({
     },
     priceLabel: {
         fontSize: 16,
+        fontWeight: 'bold',
         color: colors.foreground,
     },
     priceValue: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: 'bold',
         color: colors.primary,
     },

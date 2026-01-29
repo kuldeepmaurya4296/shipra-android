@@ -17,6 +17,8 @@ import RideInProgressScreen from './src/screens/RideInProgressScreen';
 import RideSummaryScreen from './src/screens/RideSummaryScreen';
 import SOSScreen from './src/screens/SOSScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import DiagnosisScreen from './src/screens/DiagnosisScreen';
+import ServiceOrderScreen from './src/screens/ServiceOrderScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -30,6 +32,8 @@ export type RootStackParamList = {
   RideInProgress: { bookingId: string };
   RideSummary: { bookingId: string };
   SOS: { bookingId: string };
+  Diagnosis: { bookingId: string };
+  ServiceOrder: { type: 'maintenance' | 'fuel'; bookingId: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -70,6 +74,8 @@ const RootStack = () => {
             <Stack.Screen name="RideInProgress" component={RideInProgressScreen} />
             <Stack.Screen name="RideSummary" component={RideSummaryScreen} />
             <Stack.Screen name="SOS" component={SOSScreen} />
+            <Stack.Screen name="Diagnosis" component={DiagnosisScreen} />
+            <Stack.Screen name="ServiceOrder" component={ServiceOrderScreen} />
           </>
         )}
       </Stack.Navigator>
