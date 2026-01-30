@@ -53,7 +53,7 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Flight in Progress</Text>
+                <Text style={styles.headerTitle}>Bird in Progress</Text>
                 <Text style={styles.headerSubtitle}>Bird #42 • Altitude: 250m</Text>
             </View>
 
@@ -81,8 +81,8 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
                 </MapView>
             </View>
 
-            {/* Flight Statistics */}
-            <Text style={styles.sectionLabel}>FLIGHT STATISTICS</Text>
+            {/* Bird Statistics */}
+            <Text style={styles.sectionLabel}>BIRD STATISTICS</Text>
             <View style={styles.gridContainer}>
                 <View style={styles.gridItem}>
                     <Text style={styles.gridLabel}>Time Remaining</Text>
@@ -168,7 +168,7 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
                     style={styles.completeButton}
                     onPress={handleComplete}
                 >
-                    <Text style={styles.buttonText}>Complete Flight</Text>
+                    <Text style={styles.buttonText}>Complete Bird</Text>
                     <ArrowRight size={20} color="#fff" />
                 </TouchableOpacity>
 

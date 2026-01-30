@@ -11,7 +11,7 @@ type Props = StackScreenProps<RootStackParamList, 'History'>;
 
 interface Booking {
     _id: string;
-    flightNumber: string;
+    birdNumber: string;
     from: string;
     to: string;
     date: string;
@@ -72,9 +72,9 @@ export default function HistoryScreen({ navigation }: Props) {
                         bookings.map((item) => (
                             <View key={item._id} style={styles.bookingCard}>
                                 <View style={styles.cardHeader}>
-                                    <View style={styles.flightInfo}>
+                                    <View style={styles.birdInfo}>
                                         <Plane size={16} color={colors.primary} />
-                                        <Text style={styles.flightNumber}>{item.flightNumber}</Text>
+                                        <Text style={styles.birdNumber}>{item.birdNumber}</Text>
                                     </View>
                                     <View style={[styles.statusBadge, { backgroundColor: item.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)' }]}>
                                         <Text style={[styles.statusText, { color: item.status === 'confirmed' ? colors.success : colors.accent }]}>
@@ -188,12 +188,12 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(0,0,0,0.05)',
     },
-    flightInfo: {
+    birdInfo: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
     },
-    flightNumber: {
+    birdNumber: {
         fontWeight: 'bold',
         color: colors.foreground,
     },

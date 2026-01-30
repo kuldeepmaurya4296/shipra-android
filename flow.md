@@ -1,7 +1,7 @@
 # SHIPRA AIR MOBILITY APP - PRODUCT REQUIREMENTS DOCUMENT
 
 ## EXECUTIVE SUMMARY
-Shipra is a mobile application for booking aerial taxi services (air mobility). Users can book flights, track their journey in real-time, access booking history, and manage their profile - all with integrated emergency SOS capabilities.
+Shipra is a mobile application for booking aerial taxi services (air mobility). Users can book birds, track their journey in real-time, access booking history, and manage their profile - all with integrated emergency SOS capabilities.
 
 ---
 
@@ -51,14 +51,14 @@ Shipra is a mobile application for booking aerial taxi services (air mobility). 
          ▼
     ┌────────────────┐
     │ RIDE STATUS    │ (Tracking Arrival)
-    │ - Flight #42   │
+    │ - Bird #42   │
     │ - 4 min away   │
     │ - 1.2 km dist  │
     └────┬───────────┘
          │
          ▼
     ┌────────────────────┐
-    │ RIDE IN PROGRESS   │ (Active Flight)
+    │ RIDE IN PROGRESS   │ (Active Bird)
     │ - Real-time Stats  │
     │ - 8 min remaining  │
     │ - ⚠️ SOS Button    │
@@ -154,7 +154,7 @@ SPLASH SCREEN → (Get Started) → LOGIN SCREEN
 │                         │
 │  "Welcome to Shipra"    │ (Heading)
 │                         │
-│"Book your flight        │ (Subheading)
+│"Book your bird        │ (Subheading)
 │ in seconds"             │
 │                         │
 │   ┌─────────────────┐   │
@@ -214,7 +214,7 @@ LOGIN SCREEN → (Google/WhatsApp) → HOME SCREEN
 **Main Dashboard** | **Central Hub** | **After Login**
 
 ### Purpose
-- Show available flights/services
+- Show available birds/services
 - Display user location
 - Main entry point for booking
 - Access to other features via bottom nav
@@ -246,7 +246,7 @@ LOGIN SCREEN → (Google/WhatsApp) → HOME SCREEN
 │ └──────────────────┘   │
 │                         │
 │ ┌──────────────────┐   │
-│ │ Book a Flight    │   │ (Primary Button)
+│ │ Book a Bird    │   │ (Primary Button)
 │ └──────────────────┘   │
 │                         │
 └─────────────────────────┘
@@ -259,12 +259,12 @@ LOGIN SCREEN → (Google/WhatsApp) → HOME SCREEN
 - ✓ Availability card showing nearest aircraft
 - ✓ Aircraft ID (e.g., "Bird #42")
 - ✓ Distance and time estimate
-- ✓ "Book a Flight" button
+- ✓ "Book a Bird" button
 
 ### User Actions
 | Action | Target | Result |
 |--------|--------|--------|
-| Tap "Book a Flight" | BOOKING SCREEN | Navigate to booking |
+| Tap "Book a Bird" | BOOKING SCREEN | Navigate to booking |
 | Tap Home icon (bottom nav) | HOME SCREEN | Refresh/stay |
 | Tap History icon (bottom nav) | HISTORY SCREEN | View past bookings |
 | Tap Profile icon (bottom nav) | PROFILE SCREEN | View profile |
@@ -276,7 +276,7 @@ LOGIN SCREEN → (Google/WhatsApp) → HOME SCREEN
 
 ### Navigation Path
 ```
-HOME SCREEN → Book a Flight → BOOKING SCREEN
+HOME SCREEN → Book a Bird → BOOKING SCREEN
 HOME SCREEN → History → HISTORY SCREEN
 HOME SCREEN → Profile → PROFILE SCREEN
 ```
@@ -284,7 +284,7 @@ HOME SCREEN → Profile → PROFILE SCREEN
 ---
 
 ## SCREEN 4: BOOKING SCREEN
-**Flight Selection & Confirmation** | **Route Planning**
+**Bird Selection & Confirmation** | **Route Planning**
 
 ### Purpose
 - User selects departure and arrival locations
@@ -294,7 +294,7 @@ HOME SCREEN → Profile → PROFILE SCREEN
 ### Screen Content & Layout
 ```
 ┌─────────────────────────┐
-│ Book Your Flight        │ (Header)
+│ Book Your Bird        │ (Header)
 │ Select your route       │ (Subheader)
 │                         │
 ├─────────────────────────┤
@@ -336,7 +336,7 @@ HOME SCREEN → Profile → PROFILE SCREEN
 ```
 
 ### Mandatory Content
-- ✓ Heading: "Book Your Flight"
+- ✓ Heading: "Book Your Bird"
 - ✓ From location (default: Downtown Airport)
 - ✓ To location
 - ✓ Swap button to interchange locations
@@ -348,7 +348,7 @@ HOME SCREEN → Profile → PROFILE SCREEN
 | Action | Target | Result |
 |--------|--------|--------|
 | Tap Swap button | Local State | Swap from/to locations |
-| Tap "Confirm Booking" | RIDE STATUS SCREEN | Book flight & navigate |
+| Tap "Confirm Booking" | RIDE STATUS SCREEN | Book bird & navigate |
 | Back (system) | HOME SCREEN | Cancel booking |
 
 ### Visual States
@@ -366,18 +366,18 @@ BOOKING SCREEN → (Back) → HOME SCREEN
 ---
 
 ## SCREEN 5: RIDE STATUS SCREEN
-**Tracking Arrival** | **Flight Assignment**
+**Tracking Arrival** | **Bird Assignment**
 
 ### Purpose
 - Show aircraft approaching user
 - Real-time distance and time tracking
-- Allow user to continue to flight or cancel booking
+- Allow user to continue to bird or cancel booking
 
 ### Screen Content & Layout
 ```
 ┌─────────────────────────┐
 │ Your Bird is Arriving   │ (Header)
-│ Flight #42 assigned     │ (Subheader)
+│ Bird #42 assigned     │ (Subheader)
 │                         │
 ├─────────────────────────┤
 │   ┌────────────────┐   │
@@ -405,7 +405,7 @@ BOOKING SCREEN → (Back) → HOME SCREEN
 │                         │
 ├─────────────────────────┤
 │ ┌─────────────────────┐ │
-│ │ Continue to Flight  │ │ (Primary Button)
+│ │ Continue to Bird  │ │ (Primary Button)
 │ └─────────────────────┘ │
 │                         │
 │ ┌─────────────────────┐ │
@@ -417,18 +417,18 @@ BOOKING SCREEN → (Back) → HOME SCREEN
 
 ### Mandatory Content
 - ✓ Header: "Your Bird is Arriving"
-- ✓ Flight assignment info (Flight #42)
+- ✓ Bird assignment info (Bird #42)
 - ✓ Live tracker map with animated airplane
 - ✓ Distance metric (1.2 km)
 - ✓ Time to arrival metric (4 minutes)
 - ✓ Status badge with pulsing indicator
-- ✓ "Continue to Flight" button
+- ✓ "Continue to Bird" button
 - ✓ "Cancel Booking" button
 
 ### User Actions
 | Action | Target | Result |
 |--------|--------|--------|
-| Tap "Continue to Flight" | RIDE IN PROGRESS SCREEN | Start active flight tracking |
+| Tap "Continue to Bird" | RIDE IN PROGRESS SCREEN | Start active bird tracking |
 | Tap "Cancel Booking" | HOME SCREEN | Cancel & return home |
 | System monitoring | (Auto-update) | Real-time distance/time updates |
 
@@ -447,18 +447,18 @@ RIDE STATUS SCREEN → Cancel → HOME SCREEN
 ---
 
 ## SCREEN 6: RIDE IN PROGRESS SCREEN
-**Active Flight Monitoring** | **Real-Time Tracking**
+**Active Bird Monitoring** | **Real-Time Tracking**
 
 ### Purpose
-- Monitor active flight with live statistics
+- Monitor active bird with live statistics
 - Show estimated time remaining
 - Provide emergency SOS option
-- Allow flight completion
+- Allow bird completion
 
 ### Screen Content & Layout
 ```
 ┌─────────────────────────┐
-│ Flight in Progress      │ (Header)
+│ Bird in Progress      │ (Header)
 │ Bird #42 • Altitude:    │ (Subheader)
 │ 250m                    │
 │                         │
@@ -470,7 +470,7 @@ RIDE STATUS SCREEN → Cancel → HOME SCREEN
 │   └────────────────┘   │
 │                         │
 ├─────────────────────────┤
-│ FLIGHT STATISTICS:      │
+│ BIRD STATISTICS:      │
 │                         │
 │ ┌──────────┬──────────┐ │
 │ │ Time     │ Speed    │ │ (2x2 Grid)
@@ -489,7 +489,7 @@ RIDE STATUS SCREEN → Cancel → HOME SCREEN
 │                         │
 ├─────────────────────────┤
 │ ┌─────────────────────┐ │
-│ │ Complete Flight     │ │ (Primary Button)
+│ │ Complete Bird     │ │ (Primary Button)
 │ └─────────────────────┘ │
 │                         │
 │ ┌─────────────────────┐ │
@@ -500,8 +500,8 @@ RIDE STATUS SCREEN → Cancel → HOME SCREEN
 ```
 
 ### Mandatory Content
-- ✓ Header: "Flight in Progress"
-- ✓ Flight ID and altitude info
+- ✓ Header: "Bird in Progress"
+- ✓ Bird ID and altitude info
 - ✓ Live route visualization with moving airplane
 - ✓ Statistics grid (4 metrics):
   - Time remaining
@@ -509,13 +509,13 @@ RIDE STATUS SCREEN → Cancel → HOME SCREEN
   - Distance remaining
   - Current altitude
 - ✓ Status indicator (Safe/Normal)
-- ✓ "Complete Flight" button
+- ✓ "Complete Bird" button
 - ✓ "🚨 SOS / Emergency" button (red)
 
 ### User Actions
 | Action | Target | Result |
 |--------|--------|--------|
-| Tap "Complete Flight" | RIDE SUMMARY SCREEN | End flight & show summary |
+| Tap "Complete Bird" | RIDE SUMMARY SCREEN | End bird & show summary |
 | Tap "SOS / Emergency" | SOS SCREEN or MODAL | Show emergency interface |
 | System monitoring | (Auto-update) | Real-time stats updates |
 
@@ -588,7 +588,7 @@ RIDE IN PROGRESS SCREEN → SOS → SOS SCREEN (or MODAL)
 │                         │
 │ ┌─────────────────────┐ │
 │ │ Bird ID             │ │ (Card 3)
-│ │ Flight #42          │ │
+│ │ Bird #42          │ │
 │ └─────────────────────┘ │
 │                         │
 ├─────────────────────────┤
@@ -600,7 +600,7 @@ RIDE IN PROGRESS SCREEN → SOS → SOS SCREEN (or MODAL)
 │                         │
 ├─────────────────────────┤
 │ ┌─────────────────────┐ │
-│ │ Back to Flight      │ │ (Secondary Button)
+│ │ Back to Bird      │ │ (Secondary Button)
 │ └─────────────────────┘ │
 │                         │
 └─────────────────────────┘
@@ -614,15 +614,15 @@ RIDE IN PROGRESS SCREEN → SOS → SOS SCREEN (or MODAL)
 - ✓ Large SOS button (interactive)
 - ✓ Emergency contact number
 - ✓ User location (GPS coordinates)
-- ✓ Aircraft/flight ID
+- ✓ Aircraft/bird ID
 - ✓ Emergency instructions checklist (3 items)
-- ✓ "Back to Flight" button to exit emergency mode
+- ✓ "Back to Bird" button to exit emergency mode
 
 ### User Actions
 | Action | Target | Result |
 |--------|--------|--------|
 | Tap SOS button | (Dispatch Service) | Send emergency alert |
-| Tap "Back to Flight" | RIDE IN PROGRESS SCREEN | Return to normal flight view |
+| Tap "Back to Bird" | RIDE IN PROGRESS SCREEN | Return to normal bird view |
 | (Auto-action) | (Emergency Services) | Services dispatched immediately |
 
 ### Visual States
@@ -634,7 +634,7 @@ RIDE IN PROGRESS SCREEN → SOS → SOS SCREEN (or MODAL)
 ### Navigation Path
 ```
 RIDE IN PROGRESS SCREEN → SOS Button → SOS SCREEN
-SOS SCREEN → "Back to Flight" → RIDE IN PROGRESS SCREEN
+SOS SCREEN → "Back to Bird" → RIDE IN PROGRESS SCREEN
 ```
 
 ---
@@ -657,7 +657,7 @@ SOS SCREEN → "Back to Flight" → RIDE IN PROGRESS SCREEN
 │    │    (Bounce)  │    │ (Animated)
 │    └──────────────┘    │
 │                         │
-│ "Flight Completed!"     │ (Large heading)
+│ "Bird Completed!"     │ (Large heading)
 │                         │
 │ "Thank you for flying   │ (Subheading)
 │  with Shipra"           │
@@ -679,7 +679,7 @@ SOS SCREEN → "Back to Flight" → RIDE IN PROGRESS SCREEN
 │ └─────────────────────┘ │
 │                         │
 │ ┌─────────────────────┐ │
-│ │ Flight Duration     │ │ (Metric 2)
+│ │ Bird Duration     │ │ (Metric 2)
 │ │    15 minutes       │ │
 │ └─────────────────────┘ │
 │                         │
@@ -702,7 +702,7 @@ SOS SCREEN → "Back to Flight" → RIDE IN PROGRESS SCREEN
 │ └─────────────────────┘ │
 │                         │
 │ ┌─────────────────────┐ │
-│ │ Book Another Flight │ │ (Primary Button)
+│ │ Book Another Bird │ │ (Primary Button)
 │ └─────────────────────┘ │
 │                         │
 └─────────────────────────┘
@@ -710,25 +710,25 @@ SOS SCREEN → "Back to Flight" → RIDE IN PROGRESS SCREEN
 
 ### Mandatory Content
 - ✓ Success checkmark icon (animated bounce)
-- ✓ "Flight Completed!" heading
+- ✓ "Bird Completed!" heading
 - ✓ Thank you message
 - ✓ Route summary (From → To)
 - ✓ Trip details (3 metrics):
   - Distance traveled
-  - Flight duration
+  - Bird duration
   - Average speed
 - ✓ Cost breakdown:
   - Base fare
   - Service fee
   - Total paid amount
 - ✓ "Download Receipt" button
-- ✓ "Book Another Flight" button
+- ✓ "Book Another Bird" button
 
 ### User Actions
 | Action | Target | Result |
 |--------|--------|--------|
 | Tap "Download Receipt" | (Download) | Download PDF/image receipt |
-| Tap "Book Another Flight" | HOME SCREEN | Return to home dashboard |
+| Tap "Book Another Bird" | HOME SCREEN | Return to home dashboard |
 | (View only) | N/A | Display trip confirmation |
 
 ### Visual States
@@ -749,7 +749,7 @@ RIDE SUMMARY SCREEN → "Book Another" → HOME SCREEN
 **Past Trips & Bookings** | **Travel History**
 
 ### Purpose
-- Display all past flight bookings
+- Display all past bird bookings
 - Show trip details and receipts
 - Allow receipt downloads
 - Display travel statistics
@@ -759,7 +759,7 @@ RIDE SUMMARY SCREEN → "Book Another" → HOME SCREEN
 ┌─────────────────────────┐
 │ Booking History         │ (Header)
 │ View all your past      │ (Subheader)
-│ flights                 │
+│ birds                 │
 │                         │
 ├─────────────────────────┤
 │                         │
@@ -813,7 +813,7 @@ RIDE SUMMARY SCREEN → "Book Another" → HOME SCREEN
 │                         │
 ├─────────────────────────┤
 │ SUMMARY:                │
-│ Total Flights: 12       │ (Stat 1)
+│ Total Birds: 12       │ (Stat 1)
 │ Total Spent: $524.24    │ (Stat 2)
 │                         │
 └─────────────────────────┘
@@ -821,7 +821,7 @@ RIDE SUMMARY SCREEN → "Book Another" → HOME SCREEN
 
 ### Mandatory Content
 - ✓ Header: "Booking History"
-- ✓ Subheader: "View all your past flights"
+- ✓ Subheader: "View all your past birds"
 - ✓ Multiple booking cards (at least 4) with:
   - Route (From → To)
   - Date
@@ -831,7 +831,7 @@ RIDE SUMMARY SCREEN → "Book Another" → HOME SCREEN
   - Cost
   - Download receipt option
 - ✓ Summary section:
-  - Total flights count
+  - Total birds count
   - Total amount spent
 
 ### User Actions
@@ -883,7 +883,7 @@ BOOKING HISTORY SCREEN → Download Receipt → (Receipt file)
 │ STATISTICS:             │
 │                         │
 │ ┌──────────┬──────────┐ │
-│ │ Flights  │ Rating   │ │ (3-column grid)
+│ │ Birds  │ Rating   │ │ (3-column grid)
 │ │    12    │   4.8 ⭐ │ │
 │ └──────────┴──────────┘ │
 │                          │
@@ -927,7 +927,7 @@ BOOKING HISTORY SCREEN → Download Receipt → (Receipt file)
 - ✓ User name
 - ✓ User email
 - ✓ User statistics (3 stats):
-  - Total flights
+  - Total birds
   - Rating
   - Membership status
 - ✓ Menu items (4 options):
@@ -1000,7 +1000,7 @@ LOGIN SCREEN
     └─→ WhatsApp Login → HOME SCREEN
 
 HOME SCREEN (Navigation Hub)
-    ├─→ Book a Flight → BOOKING SCREEN
+    ├─→ Book a Bird → BOOKING SCREEN
     ├─→ History (nav) → BOOKING HISTORY SCREEN
     └─→ Profile (nav) → PROFILE SCREEN
 
@@ -1009,16 +1009,16 @@ BOOKING SCREEN
     └─→ Back/Cancel → HOME SCREEN
 
 RIDE STATUS SCREEN
-    ├─→ Continue to Flight → RIDE IN PROGRESS SCREEN
+    ├─→ Continue to Bird → RIDE IN PROGRESS SCREEN
     └─→ Cancel Booking → HOME SCREEN
 
 RIDE IN PROGRESS SCREEN
-    ├─→ Complete Flight → RIDE SUMMARY SCREEN
+    ├─→ Complete Bird → RIDE SUMMARY SCREEN
     ├─→ SOS/Emergency → SOS SCREEN
-    └─→ (Back to Flight from SOS) → RIDE IN PROGRESS SCREEN
+    └─→ (Back to Bird from SOS) → RIDE IN PROGRESS SCREEN
 
 RIDE SUMMARY SCREEN
-    ├─→ Book Another Flight → HOME SCREEN
+    ├─→ Book Another Bird → HOME SCREEN
     └─→ Download Receipt → (Receipt file)
 
 BOOKING HISTORY SCREEN
@@ -1036,7 +1036,7 @@ PROFILE SCREEN
     └─→ History (nav) → BOOKING HISTORY SCREEN
 
 SOS SCREEN (Full Page)
-    └─→ Back to Flight → RIDE IN PROGRESS SCREEN
+    └─→ Back to Bird → RIDE IN PROGRESS SCREEN
 ```
 
 ---
@@ -1058,24 +1058,24 @@ SOS SCREEN (Full Page)
 - From location (editable selection)
 - To location (editable selection)
 - Distance between locations (e.g., "12.5 km")
-- Estimated flight time (e.g., "15 minutes")
+- Estimated bird time (e.g., "15 minutes")
 - Service fee (e.g., "₹150")
 - Base fare/subtotal (e.g., "₹2,850")
 - Total price (e.g., "₹3,000")
 
 ### Ride Status Screen Data
-- Flight ID assignment (e.g., "Flight #42")
+- Bird ID assignment (e.g., "Bird #42")
 - Distance from user (e.g., "1.2 km")
 - Time to arrival (e.g., "4 minutes")
 - Current status (Live, On Time, etc.)
 
 ### Ride In Progress Screen Data
-- Flight ID and altitude (e.g., "Bird #42 • 250m")
+- Bird ID and altitude (e.g., "Bird #42 • 250m")
 - Time remaining (e.g., "8 min")
 - Current speed (e.g., "95 km/h")
 - Distance remaining (e.g., "6.2 km")
 - Current altitude (e.g., "250 m")
-- Overall flight status (Safe, Operational, etc.)
+- Overall bird status (Safe, Operational, etc.)
 
 ### Ride Summary Screen Data
 - Route summary (From → To)
@@ -1089,7 +1089,7 @@ SOS SCREEN (Full Page)
 ### SOS Screen Data
 - Emergency contact number
 - User's GPS coordinates
-- Aircraft/Flight ID
+- Aircraft/Bird ID
 - Emergency status message
 
 ### Booking History Screen Data
@@ -1105,7 +1105,7 @@ For each booking:
 ### Profile Screen Data
 - User name
 - User email
-- Total flights completed
+- Total birds completed
 - User rating
 - Membership status/tier
 - Menu options for settings
@@ -1128,11 +1128,11 @@ For each booking:
 - ✓ Trip details display
 - ✓ Booking confirmation
 
-### 3. Flight Tracking
+### 3. Bird Tracking
 - ✓ Real-time distance updates
 - ✓ Time to arrival updates
 - ✓ Live route visualization
-- ✓ Flight statistics display
+- ✓ Bird statistics display
 
 ### 4. Emergency System
 - ✓ Easy SOS button access
@@ -1163,27 +1163,27 @@ For each booking:
 
 ## Complete User Flows
 
-### Scenario 1: New User - First Flight Booking
+### Scenario 1: New User - First Bird Booking
 ```
 Step 1: User opens app → SPLASH SCREEN (welcome animation)
 Step 2: User taps "Get Started" → LOGIN SCREEN
 Step 3: User signs in with Google/WhatsApp → HOME SCREEN
-Step 4: User views available flights and taps "Book a Flight" → BOOKING SCREEN
+Step 4: User views available birds and taps "Book a Bird" → BOOKING SCREEN
 Step 5: User confirms booking → RIDE STATUS SCREEN (tracking begins)
-Step 6: User taps "Continue to Flight" → RIDE IN PROGRESS SCREEN
-Step 7: User monitors real-time flight data
-Step 8: User taps "Complete Flight" → RIDE SUMMARY SCREEN
-Step 9: User downloads receipt and taps "Book Another Flight" → HOME SCREEN
+Step 6: User taps "Continue to Bird" → RIDE IN PROGRESS SCREEN
+Step 7: User monitors real-time bird data
+Step 8: User taps "Complete Bird" → RIDE SUMMARY SCREEN
+Step 9: User downloads receipt and taps "Book Another Bird" → HOME SCREEN
 ```
 
-### Scenario 2: Emergency During Flight
+### Scenario 2: Emergency During Bird
 ```
 Step 1: User is on RIDE IN PROGRESS SCREEN
 Step 2: User taps "SOS / Emergency" button
 Step 3: SOS modal or full screen appears with red alert
 Step 4: Emergency services are alerted
 Step 5: User sees emergency contact, location, and instructions
-Step 6: User taps "Back to Flight" → Returns to RIDE IN PROGRESS SCREEN
+Step 6: User taps "Back to Bird" → Returns to RIDE IN PROGRESS SCREEN
 ```
 
 ### Scenario 3: View Booking History & Download Receipt
@@ -1214,10 +1214,10 @@ Step 5: User taps "Logout" button → LOGIN SCREEN (session ends)
 |---|------------|---------|-------------|----------------|
 | 1 | Splash | Onboarding & branding | Get Started | Login |
 | 2 | Login | User authentication | Google/WhatsApp sign-in | Home |
-| 3 | Home | Main dashboard & booking hub | Book flight / History / Profile | Booking / History / Profile |
+| 3 | Home | Main dashboard & booking hub | Book bird / History / Profile | Booking / History / Profile |
 | 4 | Booking | Route selection & pricing | Swap locations / Confirm | Ride Status |
 | 5 | Ride Status | Arrival tracking | Continue / Cancel | Ride In Progress / Home |
-| 6 | Ride In Progress | Active flight monitoring | Complete / SOS | Ride Summary / SOS |
+| 6 | Ride In Progress | Active bird monitoring | Complete / SOS | Ride Summary / SOS |
 | 7 | SOS | Emergency response | Report emergency / Back | Ride In Progress |
 | 8 | Ride Summary | Trip completion & receipt | Download / Book Another | Home |
 | 9 | Booking History | Past trips review | Download Receipt | Home / Profile |

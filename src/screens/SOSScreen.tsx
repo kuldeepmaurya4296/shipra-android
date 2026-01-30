@@ -70,7 +70,7 @@ export default function SOSScreen({ navigation, route }: Props) {
                                 <Shield size={20} color="#fff" />
                                 <View>
                                     <Text style={styles.infoLabel}>Bird ID</Text>
-                                    <Text style={styles.infoValue}>Flight #42</Text>
+                                    <Text style={styles.infoValue}>Bird #42</Text>
                                 </View>
                             </View>
                         </View>
@@ -93,7 +93,7 @@ export default function SOSScreen({ navigation, route }: Props) {
                     </View>
 
                     <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                        <Text style={styles.backButtonText}>Back to Flight</Text>
+                        <Text style={styles.backButtonText}>Back to Bird</Text>
                     </TouchableOpacity>
                 </View>
             </LinearGradient>

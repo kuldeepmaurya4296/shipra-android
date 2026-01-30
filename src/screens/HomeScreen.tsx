@@ -96,7 +96,7 @@ export default function HomeScreen({ navigation }: Props) {
         }
     };
 
-    const handleBookFlight = () => {
+    const handleBookBird = () => {
         if (!toLocation) {
             Alert.alert('Selection Required', 'Please enter your destination.');
             return;
@@ -235,7 +235,7 @@ export default function HomeScreen({ navigation }: Props) {
 
                     <TouchableOpacity
                         style={styles.bookButton}
-                        onPress={handleBookFlight}
+                        onPress={handleBookBird}
                         activeOpacity={0.9}
                     >
                         <Text style={styles.bookButtonText}>Search Available Birds</Text>

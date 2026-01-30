@@ -86,7 +86,7 @@ export default function ProfileScreen({ navigation }: Props) {
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
                         <Text style={styles.statValue}>12</Text>
-                        <Text style={styles.statLabel}>Flights</Text>
+                        <Text style={styles.statLabel}>Birds</Text>
                     </View>
                 </View>
 

@@ -31,7 +31,7 @@ export default function ServiceOrderScreen({ navigation, route }: Props) {
                     <Text style={styles.successTitle}>Order Confirmed</Text>
                     <Text style={styles.successText}>Ground crew is en route to your bird.</Text>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.primaryButton}>
-                        <Text style={styles.buttonText}>Return to Flight</Text>
+                        <Text style={styles.buttonText}>Return to Bird</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

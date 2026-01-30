@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const BookingSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    flightNumber: { type: String, required: true },
+    birdNumber: { type: String, required: true },
     from: { type: String, defaultValue: 'Downtown Airport' },
     to: { type: String, required: true },
     date: { type: Date, required: true },

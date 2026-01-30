@@ -1,7 +1,7 @@
 # ShipraApp ✈️
 
 ## 📱 Application Overview
-ShipraApp is a premium mobile application built with **React Native** and **TypeScript**. It offers a high-end flight booking experience with a sleek, modern UI. The app is fully integrated with a Node.js/Express backend and MongoDB Atlas.
+ShipraApp is a premium mobile application built with **React Native** and **TypeScript**. It offers a high-end bird booking experience with a sleek, modern UI. The app is fully integrated with a Node.js/Express backend and MongoDB Atlas.
 
 ---
 
@@ -18,14 +18,14 @@ ShipraApp is a premium mobile application built with **React Native** and **Type
 - [x] **Database**: MongoDB Atlas cloud integration
 - [x] **Authentication**: Secure Login & Registration with JWT
 - [x] **User Management**: Profile viewing and updates
-- [x] **Booking System**: Create and store flight bookings
+- [x] **Booking System**: Create and store bird bookings
 - [x] **History Tracking**: Fetch and display historical trips from DB
 
 ### **Phase 3: Advanced Features (Next)**
 - [ ] **Payment Integration**: Live Razorpay gateway (currently simulated)
 - [ ] **Push Notifications**: Firebase Cloud Messaging (FCM)
 - [ ] **Live Maps**: Interactive route visualization via Google Maps
-- [ ] **Real-time Status**: Live flight tracking updates
+- [ ] **Real-time Status**: Live bird tracking updates
 
 ---
 

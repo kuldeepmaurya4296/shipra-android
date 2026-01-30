@@ -29,7 +29,7 @@ export default function RideStatusScreen({ navigation, route }: Props) {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Your Bird is Arriving</Text>
-                <Text style={styles.headerSubtitle}>Flight #42 assigned</Text>
+                <Text style={styles.headerSubtitle}>Bird #42 assigned</Text>
             </View>
 
             {/* Tracker Map Area */}
@@ -88,7 +88,7 @@ export default function RideStatusScreen({ navigation, route }: Props) {
                     style={styles.primaryButton}
                     onPress={() => navigation.navigate('RideInProgress', { bookingId })}
                 >
-                    <Text style={styles.primaryButtonText}>Continue to Flight</Text>
+                    <Text style={styles.primaryButtonText}>Continue to Bird</Text>
                     <Navigation size={20} color="#fff" />
                 </TouchableOpacity>
 

@@ -9,7 +9,7 @@ const BirdSchema = new mongoose.Schema({
         lat: { type: Number, default: 28.7041 },
         lng: { type: Number, default: 77.1025 }
     },
-    status: { type: String, enum: ['active', 'maintenance', 'flight'], default: 'active' },
+    status: { type: String, enum: ['active', 'maintenance', 'in-air'], default: 'active' },
     imageUrl: { type: String }
 });
 

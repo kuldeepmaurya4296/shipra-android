@@ -26,7 +26,7 @@ export default function RideSummaryScreen({ navigation }: Props) {
                     <Animated.View style={[styles.checkCircle, { transform: [{ scale: scaleAnim }] }]}>
                         <Check size={48} color="#fff" />
                     </Animated.View>
-                    <Text style={styles.title}>Flight Completed!</Text>
+                    <Text style={styles.title}>Bird Ride Completed!</Text>
                     <Text style={styles.subtitle}>Thank you for flying with Shipra</Text>
                 </View>
 
@@ -46,7 +46,7 @@ export default function RideSummaryScreen({ navigation }: Props) {
                     </View>
                     <View style={styles.divider} />
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Flight Duration</Text>
+                        <Text style={styles.detailLabel}>Ride Duration</Text>
                         <Text style={styles.detailValue}>15 mins</Text>
                     </View>
                     <View style={styles.divider} />
@@ -83,7 +83,7 @@ export default function RideSummaryScreen({ navigation }: Props) {
                         style={styles.primaryButton}
                         onPress={() => navigation.navigate('Home')}
                     >
-                        <Text style={styles.primaryButtonText}>Book Another Flight</Text>
+                        <Text style={styles.primaryButtonText}>Book Another Bird</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

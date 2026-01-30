@@ -33,7 +33,7 @@ The **Registration Screen** is now fully functional.
 
 ## 4. Features Integration
 - **Booking History**: Automatically fetches your bookings from the database.
-- **Confirm Flight**: Saves a new booking to the database and shows a success alert.
+- **Confirm Bird**: Saves a new booking to the database and shows a success alert.
 - **Auth Persistence**: The app remembers your login even after restart (using AsyncStorage).
 
 ## 5. Third-Party Setup

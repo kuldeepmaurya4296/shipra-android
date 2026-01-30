@@ -71,7 +71,7 @@ export default function DiagnosisScreen({ navigation, route }: Props) {
                         <View style={styles.summaryContainer}>
                             <CheckCircle size={48} color={colors.success} />
                             <Text style={styles.summaryTitle}>All Systems Nominal</Text>
-                            <Text style={styles.summaryDesc}>Bird is flight-worthy and performing at peak efficiency.</Text>
+                            <Text style={styles.summaryDesc}>Bird is airworthy and performing at peak efficiency.</Text>
                         </View>
                     </>
                 )}

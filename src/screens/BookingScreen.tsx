@@ -127,7 +127,7 @@ export default function BookingScreen({ route, navigation }: Props) {
         setLoading(true);
 
         const options = {
-            description: 'Flight Booking #' + Math.floor(1000 + Math.random() * 9000),
+            description: 'Bird Booking #' + Math.floor(1000 + Math.random() * 9000),
             image: 'https://i.imgur.com/3g7nmJC.png', // Shipra placeholder
             currency: 'INR',
             key: RAZORPAY_KEY_ID,
@@ -147,7 +147,7 @@ export default function BookingScreen({ route, navigation }: Props) {
 
             // Payment Success: Create Booking
             const bookingData = {
-                flightNumber: selectedBird.model + "-" + Math.floor(100 + Math.random() * 900),
+                birdNumber: selectedBird.model + "-" + Math.floor(100 + Math.random() * 900),
                 from: from,
                 to: to,
                 date: new Date().toISOString(),
@@ -178,7 +178,7 @@ export default function BookingScreen({ route, navigation }: Props) {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <ArrowLeft size={24} color={colors.foreground} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Confirm Flight</Text>
+                <Text style={styles.title}>Confirm Bird</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
