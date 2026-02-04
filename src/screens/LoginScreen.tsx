@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, ScrollView, ToastAndroid } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -7,6 +7,7 @@ import { RootStackParamList } from '../../App';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, Phone, KeyRound, ArrowLeft } from 'lucide-react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { GOOGLE_CLIENT_ID } from '@env';
 
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
@@ -28,14 +29,21 @@ export default function LoginScreen({ navigation }: Props) {
     useEffect(() => {
         try {
             GoogleSignin.configure({
-                // You would normally put your webClientId here from Firebase/Google Console
-                // webClientId: 'YOUR_WEB_CLIENT_ID', 
+                webClientId: GOOGLE_CLIENT_ID,
                 offlineAccess: true
             });
         } catch (e) {
             console.error('Google Signin configure error', e);
         }
     }, []);
+
+    const showToast = (message: string) => {
+        if (Platform.OS === 'android') {
+            ToastAndroid.show(message, ToastAndroid.SHORT);
+        } else {
+            Alert.alert('Notice', message);
+        }
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -46,6 +54,7 @@ export default function LoginScreen({ navigation }: Props) {
         setLoading(true);
         try {
             await login(email, password);
+            showToast('Login Successful!');
         } catch (error: any) {
             const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
             Alert.alert('Error', message);
@@ -63,10 +72,12 @@ export default function LoginScreen({ navigation }: Props) {
         try {
             await requestOtp(phoneNumber);
             setOtpSent(true);
-            Alert.alert('Success', 'OTP sent to your WhatsApp number');
+            showToast('OTP sent to your WhatsApp number');
         } catch (error: any) {
+            setOtpSent(false); // Ensure we don't proceed if it failed
             const message = error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.';
-            Alert.alert('Error', message);
+            console.error('sendOtp error:', error.response?.data || error);
+            Alert.alert('Unable to Send OTP', message);
         } finally {
             setLoading(false);
         }
@@ -80,6 +91,7 @@ export default function LoginScreen({ navigation }: Props) {
         setLoading(true);
         try {
             await loginWithOtp(phoneNumber, otp);
+            showToast('Login Successful!');
         } catch (error: any) {
             const message = error.response?.data?.message || 'Invalid OTP. Please check and try again.';
             Alert.alert('Error', message);
@@ -141,7 +153,10 @@ export default function LoginScreen({ navigation }: Props) {
                         </View>
 
                         <View style={styles.illustrationContainer}>
-                            <Text style={styles.illustrationEmoji}>{isWhatsAppLogin ? '💬' : '✈️'}</Text>
+                            <Image
+                                source={require('../assets/logo.png')}
+                                style={{ width: 100, height: 100, resizeMode: 'contain' }}
+                            />
                         </View>
 
                         <View style={styles.form}>
