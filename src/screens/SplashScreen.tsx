@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Image } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
 
@@ -49,9 +49,11 @@ export default function SplashScreen({ navigation }: Props) {
         >
             <View style={styles.content}>
                 <Animated.View style={[styles.logoContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-                    <Animated.View style={[styles.logoCircle, { transform: [{ rotate: spin }] }]}>
-                        <Text style={styles.logoIcon}>✈</Text>
-                    </Animated.View>
+                    <Image
+                        source={require('../assets/logo.png')}
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
                 </Animated.View>
 
                 <Animated.Text style={[styles.title, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -61,6 +63,14 @@ export default function SplashScreen({ navigation }: Props) {
                 <Animated.Text style={[styles.subtitle, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
                     Future of Air Mobility
                 </Animated.Text>
+
+                <Animated.View style={[styles.gifContainer, { opacity: fadeAnim }]}>
+                    <Image
+                        source={require('../assets/360.gif')}
+                        style={styles.gifStyle}
+                        resizeMode="contain"
+                    />
+                </Animated.View>
 
                 <View style={styles.dots}>
                     {[0, 1, 2].map((i) => (
@@ -96,21 +106,21 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     logoContainer: {
-        marginBottom: 48,
+        marginBottom: 24,
+        alignItems: 'center',
     },
-    logoCircle: {
-        width: 96,
-        height: 96,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: 48,
+    logoImage: {
+        width: 120,
+        height: 120,
+    },
+    gifContainer: {
+        marginBottom: 40,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.3)',
     },
-    logoIcon: {
-        fontSize: 40,
-        color: '#fff',
+    gifStyle: {
+        width: 280,
+        height: 160,
     },
     title: {
         fontSize: 48,

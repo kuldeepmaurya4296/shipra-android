@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -53,6 +53,9 @@ export default function RegisterScreen({ navigation }: Props) {
 
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={styles.header}>
+                            <View style={styles.logoContainer}>
+                                <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+                            </View>
                             <Text style={styles.title}>Create Account</Text>
                             <Text style={styles.subtitle}>Join Shipra for premium air travel</Text>
                         </View>
@@ -137,6 +140,14 @@ const styles = StyleSheet.create({
     },
     header: {
         marginBottom: 32,
+    },
+    logoContainer: {
+        marginBottom: 24,
+        alignItems: 'center',
+    },
+    logo: {
+        width: 80,
+        height: 80,
     },
     title: {
         fontSize: 32,

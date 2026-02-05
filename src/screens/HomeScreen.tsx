@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, TextInput, Alert, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, TextInput, Alert, Dimensions, Image } from 'react-native';
 import { MapPin, Zap, PlaneTakeoff, PlaneLanding, Search, Navigation as NavigationIcon, LocateFixed } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
@@ -129,7 +129,10 @@ export default function HomeScreen({ navigation }: Props) {
                 style={styles.header}
             >
                 <Animated.View style={{ opacity: fadeAnim }}>
-                    <Text style={styles.greeting}>Shipra Fly ✈️</Text>
+                    <View style={styles.brandHeader}>
+                        <Image source={require('../assets/logo.png')} style={styles.headerLogo} />
+                        <Text style={styles.greeting}>Shipra Fly</Text>
+                    </View>
                     <View style={styles.locationContainer}>
                         <MapPin size={14} color={colors.primary} />
                         <Text style={styles.locationText}>Ready for takeoff from {fromLocation}</Text>
@@ -303,10 +306,18 @@ export default function HomeScreen({ navigation }: Props) {
                 <Animated.View style={[styles.birdCard, { opacity: fadeAnim }]}>
                     <View style={styles.birdContent}>
                         <View style={styles.birdHeader}>
-                            <Text style={styles.birdTitle}>Eco-Bird Status</Text>
-                            <View style={styles.badge}>
-                                <Text style={styles.badgeText}>Active</Text>
+                            <View>
+                                <Text style={styles.birdTitle}>Eco-Bird Status</Text>
+                                <View style={styles.badge}>
+                                    <Text style={styles.badgeText}>Active</Text>
+                                </View>
                             </View>
+                            {/* Visual of the bird */}
+                            <Image
+                                source={require('../assets/360.gif')}
+                                style={{ width: 60, height: 40 }}
+                                resizeMode="contain"
+                            />
                         </View>
                         <View style={styles.birdInfoRow}>
                             <Zap size={20} color={colors.accent} />
@@ -336,6 +347,16 @@ const styles = StyleSheet.create({
     header: {
         padding: 24,
         paddingTop: 60,
+    },
+    brandHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    headerLogo: {
+        width: 40,
+        height: 40,
+        resizeMode: 'contain',
     },
     greeting: {
         fontSize: 28,
