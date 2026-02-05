@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
+import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Clock, MapPin, Calendar, CreditCard, Ruler, Zap, Plane } from 'lucide-react-native';
 import client from '../api/client';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -31,6 +33,7 @@ function deg2rad(deg: number) {
 
 export default function BookingScreen({ route, navigation }: Props) {
     const { from, to } = route.params;
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [birds, setBirds] = useState<any[]>([]);
     const [selectedBird, setSelectedBird] = useState<any>(null);
@@ -146,6 +149,8 @@ export default function BookingScreen({ route, navigation }: Props) {
             // alert(`Payment ID: ${data.razorpay_payment_id}`); // Optional debug
 
             // Payment Success: Create Booking
+            const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+
             const bookingData = {
                 birdNumber: selectedBird.model + "-" + Math.floor(100 + Math.random() * 900),
                 from: from,
@@ -154,11 +159,26 @@ export default function BookingScreen({ route, navigation }: Props) {
                 amount: fare,
                 status: 'confirmed',
                 birdId: selectedBird._id,
-                paymentId: data.razorpay_payment_id
+                paymentId: data.razorpay_payment_id,
+                otp: otpCode, // Store OTP in booking object
+                phone: user?.phone || '9191919191'
             };
 
             const response = await client.post('/bookings', bookingData);
-            navigation.navigate('RideStatus', { bookingId: response.data._id });
+
+            // Store trip data for Pilot simulation
+            // Since we don't have a real backend pushing to pilot, we stick it in AsyncStorage
+            // so the Pilot side (on same device) can pick it up.
+            const tripData = {
+                ...bookingData,
+                _id: response.data._id,
+                userName: 'Shipra User', // Mock user name since we might not have it in this scope easily without context
+                userPhone: '9191919191',
+                userEmail: 'user@shipra.com'
+            };
+            await AsyncStorage.setItem('current_trip_data', JSON.stringify(tripData));
+
+            navigation.navigate('RideStatus', { bookingId: response.data._id, otp: otpCode });
 
         } catch (error: any) {
             console.error('Payment/Booking failed', error);

@@ -3,7 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator,
 import { colors } from '../theme/colors';
 import LinearGradient from 'react-native-linear-gradient';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import client from '../api/client';
+
 export default function PilotHomeScreen() {
+    const navigation = useNavigation();
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -14,12 +19,36 @@ export default function PilotHomeScreen() {
         }
 
         setLoading(true);
-        // Simulator delay for now
-        setTimeout(() => {
+        try {
+            // Call Backend API to verify
+            const response = await client.post('/bookings/verify-otp', { otp });
+            const booking = response.data;
+
+            if (booking) {
+                Alert.alert('Success', 'Ride Verified!');
+                setOtp('');
+
+                // Map backend data to screen params
+                const tripData = {
+                    ...booking,
+                    userName: booking.userId?.name || 'Guest User',
+                    userEmail: booking.userId?.email,
+                    userPhone: booking.userId?.phone,
+                };
+
+                // @ts-ignore
+                navigation.navigate('PilotRideDetails', { tripData });
+            }
+        } catch (error: any) {
+            console.error('Verify API Error:', error);
+            if (error.response) {
+                Alert.alert('Verification Failed', error.response.data.message || 'Invalid OTP');
+            } else {
+                Alert.alert('Error', 'Network Error. Please try again.');
+            }
+        } finally {
             setLoading(false);
-            Alert.alert('Success', 'Ride Verified! Starting journey...');
-            setOtp('');
-        }, 1500);
+        }
     };
 
     return (

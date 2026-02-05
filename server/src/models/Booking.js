@@ -10,6 +10,8 @@ const BookingSchema = new mongoose.Schema({
     paymentId: { type: String },
     amount: { type: Number, required: true },
     birdId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bird' },
+    otp: { type: String },
+    phone: { type: String },
     createdAt: { type: Date, default: Date.now },
 });
 

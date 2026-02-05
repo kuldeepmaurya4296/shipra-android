@@ -31,7 +31,7 @@ export type RootStackParamList = {
   History: undefined;
   Profile: undefined;
   Booking: { from: string; to: string };
-  RideStatus: { bookingId: string };
+  RideStatus: { bookingId: string; otp?: string };
   RideInProgress: { bookingId: string };
   RideSummary: { bookingId: string };
   SOS: { bookingId: string };

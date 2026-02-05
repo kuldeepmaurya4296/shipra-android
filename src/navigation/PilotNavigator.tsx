@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import PilotHomeScreen from '../screens/PilotHomeScreen';
 import PilotProfileScreen from '../screens/PilotProfileScreen';
+import PilotRideDetailsScreen from '../screens/PilotRideDetailsScreen';
 import { Home, User } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 
@@ -35,6 +36,14 @@ export default function PilotNavigator() {
                 options={{
                     tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
                     tabBarLabel: 'Profile'
+                }}
+            />
+            <Tab.Screen
+                name="PilotRideDetails"
+                component={PilotRideDetailsScreen}
+                options={{
+                    tabBarButton: () => null, // Keep hidden from list, but allow navigation to it
+                    title: 'Ride Details'
                 }}
             />
         </Tab.Navigator>

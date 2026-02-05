@@ -9,17 +9,28 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 type Props = StackScreenProps<RootStackParamList, 'RideStatus'>;
 
 export default function RideStatusScreen({ navigation, route }: Props) {
-    const { bookingId } = route.params;
+    const { bookingId, otp } = route.params;
     const [statusScale] = useState(new Animated.Value(1));
 
     // Simulate pulsing animation for the status indicator
     useEffect(() => {
-        Animated.loop(
+        if (otp) {
+            // Simulate sending OTP
+            console.log(`[OTP SYSTEM] OTP Generated: ${otp}`);
+            console.log(`[OTP SYSTEM] Sending OTP to registered Email (user@shipra.com)...`);
+            console.log(`[OTP SYSTEM] Sending OTP to WhatsApp (+91 91919 19191)...`);
+            // In a real app we'd trigger a backend endpoint here
+        }
+
+        const pulse = Animated.loop(
             Animated.sequence([
                 Animated.timing(statusScale, { toValue: 1.2, duration: 800, useNativeDriver: true }),
                 Animated.timing(statusScale, { toValue: 1, duration: 800, useNativeDriver: true })
             ])
-        ).start();
+        );
+        pulse.start();
+
+        return () => pulse.stop();
     }, []);
 
     // Simulate "arrived" content after a few seconds or allow instant continue
@@ -99,6 +110,13 @@ export default function RideStatusScreen({ navigation, route }: Props) {
                     <Text style={styles.secondaryButtonText}>Cancel Booking</Text>
                 </TouchableOpacity>
             </View>
+            {otp && (
+                <View style={styles.otpContainer}>
+                    <Text style={styles.otpLabel}>RIDE OTP</Text>
+                    <Text style={styles.otpValue}>{otp}</Text>
+                    <Text style={styles.otpHint}>Sent to Email & WhatsApp</Text>
+                </View>
+            )}
         </SafeAreaView>
     );
 }
@@ -281,5 +299,38 @@ const styles = StyleSheet.create({
         color: colors.mutedForeground,
         fontSize: 16,
         fontWeight: '600',
+    },
+    otpContainer: {
+        position: 'absolute',
+        bottom: 120, // Above the buttons
+        left: 24,
+        backgroundColor: colors.foreground,
+        padding: 16,
+        borderRadius: 16,
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        alignItems: 'center',
+    },
+    otpLabel: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 10,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+        marginBottom: 4,
+    },
+    otpValue: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+        letterSpacing: 2,
+    },
+    otpHint: {
+        color: colors.success,
+        fontSize: 10,
+        marginTop: 4,
+        fontWeight: '500',
     },
 });
