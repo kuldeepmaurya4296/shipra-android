@@ -78,13 +78,21 @@ export default function SplashScreen({ navigation }: Props) {
                     ))}
                 </View>
 
-                <Animated.View style={{ width: '100%', opacity: fadeAnim }}>
+                <Animated.View style={{ width: '100%', opacity: fadeAnim, alignItems: 'center' }}>
                     <TouchableOpacity
                         style={styles.button}
-                        onPress={() => navigation.navigate('Login')}
+                        onPress={() => navigation.navigate('Login', {})}
                         activeOpacity={0.9}
                     >
                         <Text style={styles.buttonText}>Get Started</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.pilotButton}
+                        onPress={() => navigation.navigate('Login', { userType: 'pilot' })}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.pilotButtonText}>Login with Pilot</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </View>
@@ -165,5 +173,15 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
         textAlign: 'center',
+    },
+    pilotButton: {
+        marginTop: 20,
+        padding: 10,
+    },
+    pilotButtonText: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 14,
+        fontWeight: '500',
+        textDecorationLine: 'underline',
     },
 });

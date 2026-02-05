@@ -11,8 +11,9 @@ import { GOOGLE_CLIENT_ID } from '@env';
 
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
-export default function LoginScreen({ navigation }: Props) {
-    const { login, socialLogin, requestOtp, loginWithOtp } = useAuth();
+export default function LoginScreen({ navigation, route }: Props) {
+    const { login, socialLogin, requestOtp, loginWithOtp, pilotLogin } = useAuth();
+    const { userType } = route.params || {};
 
     // Email Login State
     const [email, setEmail] = useState('');
@@ -51,6 +52,23 @@ export default function LoginScreen({ navigation }: Props) {
             return;
         }
 
+        if (userType === 'pilot') {
+            if (email === 'k6263638053@gmail.com' && password === '123456') {
+                setLoading(true);
+                try {
+                    await pilotLogin(email);
+                } catch (e) {
+                    Alert.alert('Error', 'Pilot Login Failed');
+                } finally {
+                    setLoading(false);
+                }
+                return;
+            } else {
+                Alert.alert('Error', 'Invalid Pilot Credentials');
+                return;
+            }
+        }
+
         setLoading(true);
         try {
             await login(email, password);
@@ -62,6 +80,8 @@ export default function LoginScreen({ navigation }: Props) {
             setLoading(false);
         }
     };
+
+
 
     const handleSendOtp = async () => {
         if (!phoneNumber || phoneNumber.length < 10) {
@@ -146,9 +166,21 @@ export default function LoginScreen({ navigation }: Props) {
                                     <ArrowLeft size={24} color={colors.foreground} />
                                 </TouchableOpacity>
                             )}
-                            <Text style={styles.title}>{isWhatsAppLogin ? 'WhatsApp Login' : 'Welcome Back'}</Text>
+                            <Text style={styles.title}>
+                                {isWhatsAppLogin
+                                    ? 'WhatsApp Login'
+                                    : userType === 'pilot'
+                                        ? 'Pilot Sign In'
+                                        : 'Welcome Back'
+                                }
+                            </Text>
                             <Text style={styles.subtitle}>
-                                {isWhatsAppLogin ? 'Enter your number to receive an OTP' : 'Sign in to continue your journey'}
+                                {isWhatsAppLogin
+                                    ? 'Enter your number to receive an OTP'
+                                    : userType === 'pilot'
+                                        ? 'Enter your pilot credentials'
+                                        : 'Sign in to continue your journey'
+                                }
                             </Text>
                         </View>
 
@@ -200,6 +232,7 @@ export default function LoginScreen({ navigation }: Props) {
                                     </TouchableOpacity>
                                 </>
                             ) : (
+                                // WhatsApp Login Form
                                 <>
                                     <View style={styles.inputContainer}>
                                         <Phone size={20} color={colors.mutedForeground} style={styles.inputIcon} />
@@ -250,7 +283,7 @@ export default function LoginScreen({ navigation }: Props) {
                             )}
                         </View>
 
-                        {!isWhatsAppLogin && (
+                        {(!isWhatsAppLogin && userType !== 'pilot') && (
                             <>
                                 <View style={styles.socialSeparator}>
                                     <View style={styles.separatorLine} />
@@ -279,12 +312,14 @@ export default function LoginScreen({ navigation }: Props) {
                             </>
                         )}
 
-                        <View style={styles.footer}>
-                            <Text style={styles.footerText}>Don't have an account? </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                                <Text style={styles.linkText}>Register</Text>
-                            </TouchableOpacity>
-                        </View>
+                        {userType !== 'pilot' && (
+                            <View style={styles.footer}>
+                                <Text style={styles.footerText}>Don't have an account? </Text>
+                                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                                    <Text style={styles.linkText}>Register</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>

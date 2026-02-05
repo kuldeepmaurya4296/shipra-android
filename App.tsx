@@ -19,11 +19,14 @@ import SOSScreen from './src/screens/SOSScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import DiagnosisScreen from './src/screens/DiagnosisScreen';
 import ServiceOrderScreen from './src/screens/ServiceOrderScreen';
+import PilotOtpScreen from './src/screens/PilotOtpScreen';
+import PilotNavigator from './src/navigation/PilotNavigator';
 
 export type RootStackParamList = {
   Splash: undefined;
-  Login: undefined;
+  Login: { userType?: 'pilot' }; // Updated to support params
   Register: undefined;
+  PilotOtp: { email: string };
   Home: undefined;
   History: undefined;
   Profile: undefined;
@@ -49,35 +52,54 @@ const RootStack = () => {
     );
   }
 
+  // If user is logged in
+  if (user) {
+    if (user.role === 'pilot') {
+      return (
+        <NavigationContainer>
+          <PilotNavigator />
+        </NavigationContainer>
+      );
+    }
+
+    return (
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Home"
+          screenOptions={{
+            headerShown: false,
+            cardStyle: { backgroundColor: '#fff' }
+          }}
+        >
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="History" component={HistoryScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="Booking" component={BookingScreen} />
+          <Stack.Screen name="RideStatus" component={RideStatusScreen} />
+          <Stack.Screen name="RideInProgress" component={RideInProgressScreen} />
+          <Stack.Screen name="RideSummary" component={RideSummaryScreen} />
+          <Stack.Screen name="SOS" component={SOSScreen} />
+          <Stack.Screen name="Diagnosis" component={DiagnosisScreen} />
+          <Stack.Screen name="ServiceOrder" component={ServiceOrderScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    );
+  }
+
+  // If not logged in
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName={user ? "Home" : "Splash"}
+        initialRouteName="Splash"
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: '#fff' }
         }}
       >
-        {!user ? (
-          <>
-            <Stack.Screen name="Splash" component={SplashScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="History" component={HistoryScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="Booking" component={BookingScreen} />
-            <Stack.Screen name="RideStatus" component={RideStatusScreen} />
-            <Stack.Screen name="RideInProgress" component={RideInProgressScreen} />
-            <Stack.Screen name="RideSummary" component={RideSummaryScreen} />
-            <Stack.Screen name="SOS" component={SOSScreen} />
-            <Stack.Screen name="Diagnosis" component={DiagnosisScreen} />
-            <Stack.Screen name="ServiceOrder" component={ServiceOrderScreen} />
-          </>
-        )}
+        <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="PilotOtp" component={PilotOtpScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
