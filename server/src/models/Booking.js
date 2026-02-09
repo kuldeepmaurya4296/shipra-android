@@ -12,6 +12,13 @@ const BookingSchema = new mongoose.Schema({
     birdId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bird' },
     otp: { type: String },
     phone: { type: String },
+    whatsappNumber: { type: String },
+    callingNumber: { type: String },
+    aadharNumber: { type: String },
+    panNumber: { type: String },
+    currentAddress: { type: String },
+    permanentAddress: { type: String },
+    otherDetails: { type: String },
     createdAt: { type: Date, default: Date.now },
 });
 

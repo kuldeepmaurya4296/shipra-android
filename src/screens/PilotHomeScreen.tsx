@@ -20,7 +20,23 @@ export default function PilotHomeScreen() {
 
         setLoading(true);
         try {
-            // Call Backend API to verify
+            // Priority Check: Local Storage (For seamless demo flow with rich data)
+            const localData = await AsyncStorage.getItem('current_trip_data');
+            if (localData) {
+                const parsedData = JSON.parse(localData);
+                // Check if OTP matches (loosely, as API might return string/number)
+                if (String(parsedData.otp) === String(otp)) {
+                    Alert.alert('Success', 'Ride Verified (Local)');
+                    setOtp('');
+                    // Navigate directly with full local data
+                    // @ts-ignore
+                    navigation.navigate('PilotRideDetails', { tripData: parsedData });
+                    setLoading(false);
+                    return; // Stop here, no need to call API
+                }
+            }
+
+            // Fallback: Call Backend API to verify
             const response = await client.post('/bookings/verify-otp', { otp });
             const booking = response.data;
 
@@ -29,11 +45,20 @@ export default function PilotHomeScreen() {
                 setOtp('');
 
                 // Map backend data to screen params
+                // Prioritize booking snapshot fields, fall back to user profile fields
                 const tripData = {
                     ...booking,
                     userName: booking.userId?.name || 'Guest User',
                     userEmail: booking.userId?.email,
                     userPhone: booking.userId?.phone,
+
+                    whatsappNumber: booking.whatsappNumber || booking.userId?.whatsappNumber || '-',
+                    callingNumber: booking.callingNumber || booking.userId?.callingNumber || '-',
+                    aadharNumber: booking.aadharNumber || booking.userId?.aadharNumber || '-',
+                    panNumber: booking.panNumber || booking.userId?.panNumber || '-',
+                    currentAddress: booking.currentAddress || booking.userId?.currentAddress || '-',
+                    permanentAddress: booking.permanentAddress || booking.userId?.permanentAddress || '-',
+                    otherDetails: booking.otherDetails || booking.userId?.otherDetails || '-'
                 };
 
                 // @ts-ignore
@@ -44,7 +69,7 @@ export default function PilotHomeScreen() {
             if (error.response) {
                 Alert.alert('Verification Failed', error.response.data.message || 'Invalid OTP');
             } else {
-                Alert.alert('Error', 'Network Error. Please try again.');
+                Alert.alert('Error', 'Network Error or Invalid OTP');
             }
         } finally {
             setLoading(false);

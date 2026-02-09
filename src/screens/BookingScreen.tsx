@@ -127,6 +127,25 @@ export default function BookingScreen({ route, navigation }: Props) {
             return;
         }
 
+        // Validate user profile - must have email and whatsapp number for OTP delivery
+        const userEmail = user?.email;
+        const userWhatsApp = user?.whatsappNumber || user?.phone;
+
+        if (!userEmail || !userWhatsApp) {
+            Alert.alert(
+                'Complete Your Profile',
+                'To receive your booking OTP, please add your email address and WhatsApp number in your profile.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Go to Profile',
+                        onPress: () => navigation.navigate('Profile')
+                    }
+                ]
+            );
+            return;
+        }
+
         setLoading(true);
 
         const options = {
@@ -137,9 +156,9 @@ export default function BookingScreen({ route, navigation }: Props) {
             amount: fare * 100, // Amount in paise
             name: 'Shipra Air Mobility',
             prefill: {
-                email: 'user@shipra.com',
-                contact: '9191919191',
-                name: 'Shipra User'
+                email: userEmail,
+                contact: userWhatsApp.replace(/\D/g, ''), // Strip non-digits
+                name: user?.name || 'Shipra User'
             },
             theme: { color: colors.primary }
         };
@@ -161,22 +180,35 @@ export default function BookingScreen({ route, navigation }: Props) {
                 birdId: selectedBird._id,
                 paymentId: data.razorpay_payment_id,
                 otp: otpCode, // Store OTP in booking object
-                phone: user?.phone || '9191919191'
+                phone: userWhatsApp,
+                whatsappNumber: userWhatsApp // Explicitly send whatsapp number
             };
 
             const response = await client.post('/bookings', bookingData);
 
             // Store trip data for Pilot simulation
-            // Since we don't have a real backend pushing to pilot, we stick it in AsyncStorage
-            // so the Pilot side (on same device) can pick it up.
             const tripData = {
                 ...bookingData,
                 _id: response.data._id,
-                userName: 'Shipra User', // Mock user name since we might not have it in this scope easily without context
-                userPhone: '9191919191',
-                userEmail: 'user@shipra.com'
+                userName: user?.name || 'Shipra User',
+                userEmail: userEmail,
+                userPhone: userWhatsApp,
+                // New Fields
+                whatsappNumber: user?.whatsappNumber || user?.phone || '-',
+                callingNumber: user?.callingNumber || user?.phone || '-',
+                aadharNumber: user?.aadharNumber || '-',
+                panNumber: user?.panNumber || '-',
+                currentAddress: user?.currentAddress || '-',
+                permanentAddress: user?.permanentAddress || '-',
+                otherDetails: user?.otherDetails || '-'
             };
             await AsyncStorage.setItem('current_trip_data', JSON.stringify(tripData));
+
+            // OTP Sent Confirmation
+            Alert.alert(
+                'Booking Confirmed',
+                `OTP ${otpCode} has been sent to:\n📧 ${userEmail}\n📱 WhatsApp: ${userWhatsApp}`
+            );
 
             navigation.navigate('RideStatus', { bookingId: response.data._id, otp: otpCode });
 
@@ -184,8 +216,18 @@ export default function BookingScreen({ route, navigation }: Props) {
             console.error('Payment/Booking failed', error);
             if (error.code && error.description) {
                 Alert.alert('Payment Failed', error.description);
+            } else if (error.response?.data?.profileIncomplete) {
+                // Handle profile incomplete error from server
+                Alert.alert(
+                    'Profile Incomplete',
+                    error.response.data.message,
+                    [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Go to Profile', onPress: () => navigation.navigate('Profile') }
+                    ]
+                );
             } else {
-                Alert.alert('Error', 'Booking creation failed. Please try again.');
+                Alert.alert('Error', error.response?.data?.message || 'Booking creation failed. Please try again.');
             }
         } finally {
             setLoading(false);
