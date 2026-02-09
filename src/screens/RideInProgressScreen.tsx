@@ -42,7 +42,7 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
     };
 
     const handleComplete = () => {
-        navigation.navigate('RideSummary', { bookingId });
+        navigation.navigate('History');
     };
 
     const planeTranslateX = planeAnim.interpolate({

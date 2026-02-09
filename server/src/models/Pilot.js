@@ -33,6 +33,7 @@ const PilotSchema = new mongoose.Schema({
     permanentAddress: { type: String },
     otherDetails: { type: String },
     role: { type: String, default: 'pilot' },
+    status: { type: String, enum: ['active', 'busy', 'offline'], default: 'active' },
     createdAt: { type: Date, default: Date.now },
 });
 

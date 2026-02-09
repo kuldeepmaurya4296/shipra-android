@@ -20,23 +20,7 @@ export default function PilotHomeScreen() {
 
         setLoading(true);
         try {
-            // Priority Check: Local Storage (For seamless demo flow with rich data)
-            const localData = await AsyncStorage.getItem('current_trip_data');
-            if (localData) {
-                const parsedData = JSON.parse(localData);
-                // Check if OTP matches (loosely, as API might return string/number)
-                if (String(parsedData.otp) === String(otp)) {
-                    Alert.alert('Success', 'Ride Verified (Local)');
-                    setOtp('');
-                    // Navigate directly with full local data
-                    // @ts-ignore
-                    navigation.navigate('PilotRideDetails', { tripData: parsedData });
-                    setLoading(false);
-                    return; // Stop here, no need to call API
-                }
-            }
-
-            // Fallback: Call Backend API to verify
+            // Call Backend API to verify
             const response = await client.post('/bookings/verify-otp', { otp });
             const booking = response.data;
 

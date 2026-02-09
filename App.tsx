@@ -14,7 +14,7 @@ import BookingScreen from './src/screens/BookingScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import RideStatusScreen from './src/screens/RideStatusScreen';
 import RideInProgressScreen from './src/screens/RideInProgressScreen';
-import RideSummaryScreen from './src/screens/RideSummaryScreen';
+import RideReceiptScreen from './src/screens/RideReceiptScreen';
 import SOSScreen from './src/screens/SOSScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import DiagnosisScreen from './src/screens/DiagnosisScreen';
@@ -37,6 +37,7 @@ export type RootStackParamList = {
   SOS: { bookingId: string };
   Diagnosis: { bookingId: string };
   ServiceOrder: { type: 'maintenance' | 'fuel'; bookingId: string };
+  RideReceipt: { booking: any };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -77,10 +78,11 @@ const RootStack = () => {
           <Stack.Screen name="Booking" component={BookingScreen} />
           <Stack.Screen name="RideStatus" component={RideStatusScreen} />
           <Stack.Screen name="RideInProgress" component={RideInProgressScreen} />
-          <Stack.Screen name="RideSummary" component={RideSummaryScreen} />
+          {/* RideSummary removed */}
           <Stack.Screen name="SOS" component={SOSScreen} />
           <Stack.Screen name="Diagnosis" component={DiagnosisScreen} />
           <Stack.Screen name="ServiceOrder" component={ServiceOrderScreen} />
+          <Stack.Screen name="RideReceipt" component={RideReceiptScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     );

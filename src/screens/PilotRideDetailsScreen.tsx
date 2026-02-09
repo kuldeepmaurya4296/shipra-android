@@ -1,7 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { colors } from '../theme/colors';
-import { User, MapPin, Mail, Calendar, CheckCircle, MessageCircle, PhoneCall, FileText, Home, Info } from 'lucide-react-native';
+import { User, MapPin, Mail, Calendar, CheckCircle, MessageCircle, PhoneCall, FileText, Home, Info, PlaneLanding } from 'lucide-react-native';
+import client from '../api/client';
+import { CommonActions } from '@react-navigation/native';
 
 type Props = {
     route?: { params: { tripData: any } };
@@ -10,9 +12,46 @@ type Props = {
 
 export default function PilotRideDetailsScreen({ route, navigation }: Props) {
     const tripData = route?.params?.tripData || {};
+    const [loading, setLoading] = useState(false);
 
     // Helper to check if value is meaningful
     const hasValue = (val: string) => val && val !== '-' && val.trim() !== '';
+
+    const handleCompleteRide = async () => {
+        Alert.alert(
+            "Complete Flight",
+            "Are you sure you want to mark this flight as completed?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Confirm Completion",
+                    onPress: async () => {
+                        setLoading(true);
+                        try {
+                            await client.post('/bookings/update-status', {
+                                bookingId: tripData._id,
+                                status: 'completed'
+                            });
+                            Alert.alert("Success", "Flight marked as completed.");
+                            // Navigate to History tab
+                            navigation.dispatch(
+                                CommonActions.reset({
+                                    index: 0,
+                                    routes: [
+                                        { name: 'PilotTabs', params: { screen: 'History' } },
+                                    ],
+                                })
+                            );
+                        } catch (error: any) {
+                            Alert.alert("Error", error.response?.data?.message || "Failed to complete ride");
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     const renderRow = (icon: any, label: string, value: string, color = colors.primary, bgColor = 'rgba(79, 70, 229, 0.1)') => {
         // Skip rendering if no value
@@ -31,9 +70,6 @@ export default function PilotRideDetailsScreen({ route, navigation }: Props) {
         );
     };
 
-    // Helper to render divider only if previous item was rendered
-    const renderDividerIf = (condition: boolean) => condition ? <View style={styles.divider} /> : null;
-
     // Check which sections have data
     const hasContactData = hasValue(tripData.userName) || hasValue(tripData.userEmail) || hasValue(tripData.whatsappNumber) || hasValue(tripData.callingNumber);
     const hasIdentityData = hasValue(tripData.aadharNumber) || hasValue(tripData.panNumber) || hasValue(tripData.currentAddress) || hasValue(tripData.permanentAddress);
@@ -42,9 +78,15 @@ export default function PilotRideDetailsScreen({ route, navigation }: Props) {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Customer Verified</Text>
-                <Text style={styles.subtitle}>Ready for Takeoff</Text>
-                <CheckCircle size={48} color={colors.success} style={{ marginTop: 16 }} />
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Text style={styles.backButtonText}>Close</Text>
+                </TouchableOpacity>
+                <View style={{ alignItems: 'center' }}>
+                    <Text style={styles.title}>Customer Verified</Text>
+                    <Text style={styles.subtitle}>Ride In Progress</Text>
+                    <CheckCircle size={48} color={colors.success} style={{ marginTop: 16 }} />
+                </View>
+                <View style={{ width: 40 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
@@ -105,10 +147,18 @@ export default function PilotRideDetailsScreen({ route, navigation }: Props) {
                 </View>
 
                 <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => Alert.alert('System', 'Flight Sequence Initiated!')}
+                    style={[styles.button, loading && styles.disabledButton]}
+                    onPress={handleCompleteRide}
+                    disabled={loading}
                 >
-                    <Text style={styles.buttonText}>Initiate Flight Sequence</Text>
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <>
+                            <PlaneLanding size={24} color="#fff" style={{ marginRight: 8 }} />
+                            <Text style={styles.buttonText}>Complete Flight</Text>
+                        </>
+                    )}
                 </TouchableOpacity>
 
             </ScrollView>
@@ -122,24 +172,38 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     header: {
-        padding: 32,
-        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        padding: 24,
+        alignItems: 'flex-start',
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+    },
+    backButton: {
+        padding: 8,
+    },
+    backButtonText: {
+        fontSize: 14,
+        color: colors.mutedForeground,
+        fontWeight: 'bold',
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
         color: colors.foreground,
+        textAlign: 'center',
     },
     subtitle: {
         fontSize: 16,
-        color: colors.mutedForeground,
+        color: colors.primary,
         marginTop: 4,
+        textAlign: 'center',
+        fontWeight: 'bold',
     },
     content: {
         padding: 24,
+        paddingBottom: 60,
     },
     card: {
         backgroundColor: '#fff',
@@ -187,15 +251,22 @@ const styles = StyleSheet.create({
         marginLeft: 56, // indent past icon
     },
     button: {
-        backgroundColor: colors.primary,
+        backgroundColor: colors.success,
         paddingVertical: 18,
         borderRadius: 16,
+        flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: colors.primary,
+        shadowColor: colors.success,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 4,
+        marginBottom: 30,
+    },
+    disabledButton: {
+        backgroundColor: colors.mutedForeground,
+        opacity: 0.7,
     },
     buttonText: {
         color: '#fff',

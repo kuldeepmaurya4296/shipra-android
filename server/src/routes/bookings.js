@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const Pilot = require('../models/Pilot');
+const Bird = require('../models/Bird'); // Assuming Bird model exists
 const { sendEmail, sendWhatsApp } = require('../services/notificationService');
 const auth = require('../middleware/auth');
 
@@ -36,9 +38,23 @@ router.post('/', auth, async (req, res) => {
             });
         }
 
+        // Auto-assign to Captain Kuldeep for now (Single Pilot restriction)
+        let assignedPilotId = undefined;
+        try {
+            const defaultPilot = await Pilot.findOne({ email: 'k6263638053@gmail.com' });
+            if (defaultPilot) {
+                assignedPilotId = defaultPilot._id;
+                console.log(`Auto-assigning booking to pilot: ${defaultPilot.name} (${assignedPilotId})`);
+            }
+        } catch (pilotErr) {
+            console.error("Error finding default pilot:", pilotErr);
+        }
+
         const newBooking = new Booking({
             ...req.body,
             userId: req.user.id,
+            pilotId: assignedPilotId,
+            status: 'confirmed', // Explicitly set status
             // Enhanced user details for pilot
             whatsappNumber: whatsappNumber,
             callingNumber: user.callingNumber || whatsappNumber,
@@ -56,7 +72,11 @@ router.post('/', auth, async (req, res) => {
         // Email
         if (userEmail) {
             console.log(`[OTP] Sending Email to: ${userEmail}`);
-            sendEmail(userEmail, 'Booking Confirmed - Shipra', message);
+            try {
+                await sendEmail(userEmail, 'Booking Confirmed - Shipra', message);
+            } catch (e) {
+                console.error("Email send failed", e);
+            }
         } else {
             console.log('[OTP] Skipping Email: No email available');
         }
@@ -65,7 +85,11 @@ router.post('/', auth, async (req, res) => {
         const phoneForWhatsApp = whatsappNumber || req.body.phone || user.phone;
         if (phoneForWhatsApp) {
             console.log(`[OTP] Sending WhatsApp to: ${phoneForWhatsApp}`);
-            sendWhatsApp(phoneForWhatsApp, message);
+            try {
+                await sendWhatsApp(phoneForWhatsApp, message);
+            } catch (e) {
+                console.error("WhatsApp send failed", e);
+            }
         } else {
             console.log('[OTP] Skipping WhatsApp: No phone number available');
         }
@@ -77,7 +101,6 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-// Verify OTP (Pilot)
 // Verify OTP (Pilot) - Requires Auth to track which pilot verified it
 router.post('/verify-otp', auth, async (req, res) => {
     try {
@@ -93,16 +116,60 @@ router.post('/verify-otp', auth, async (req, res) => {
             return res.status(404).json({ message: 'Invalid OTP or Booking not found' });
         }
 
-        // Update status to ongoing and assign pilot
+        // Update Booking Status
         booking.status = 'ongoing';
-        booking.pilotId = req.user.id;
+        booking.startTime = new Date(); // Track ride start time
+        booking.pilotId = req.user.id; // Confirm the pilot who verified it is effectively the pilot
         booking.otp = undefined; // Clear OTP so it can't be used again
         await booking.save();
+
+        // Update Pilot Status to 'busy'
+        await Pilot.findByIdAndUpdate(req.user.id, { status: 'busy' });
+
+        // Update Bird Status to 'in-air'
+        if (booking.birdId) {
+            await Bird.findByIdAndUpdate(booking.birdId, { status: 'in-air' });
+        }
 
         res.json(booking);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Update Ride Status (For Pilot to complete/cancel/etc)
+router.post('/update-status', auth, async (req, res) => {
+    try {
+        const { bookingId, status } = req.body;
+
+        const booking = await Booking.findById(bookingId);
+        if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+        // Ensure pilot owns this booking
+        if (booking.pilotId && booking.pilotId.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized for this booking' });
+        }
+
+        booking.status = status;
+
+        if (status === 'completed') {
+            booking.endTime = new Date(); // Track ride end time
+
+            // Release Pilot
+            await Pilot.findByIdAndUpdate(req.user.id, { status: 'active' });
+
+            // Release Bird
+            if (booking.birdId) {
+                await Bird.findByIdAndUpdate(booking.birdId, { status: 'active' });
+            }
+        }
+
+        await booking.save();
+        res.json(booking);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: err.message });
     }
 });
 
@@ -124,7 +191,10 @@ router.get('/pilot-history', auth, async (req, res) => {
 // Get User Bookings
 router.get('/', auth, async (req, res) => {
     try {
-        const bookings = await Booking.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        const bookings = await Booking.find({ userId: req.user.id })
+            .populate('birdId', 'name model')
+            .populate('pilotId', 'name phone') // Populate pilot info
+            .sort({ createdAt: -1 });
         res.json(bookings);
     } catch (err) {
         res.status(500).json({ message: err.message });

@@ -20,6 +20,8 @@ const BookingSchema = new mongoose.Schema({
     currentAddress: { type: String },
     permanentAddress: { type: String },
     otherDetails: { type: String },
+    startTime: { type: Date },
+    endTime: { type: Date },
     createdAt: { type: Date, default: Date.now },
 });
 
