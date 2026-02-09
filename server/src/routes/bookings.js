@@ -78,25 +78,46 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Verify OTP (Pilot)
-router.post('/verify-otp', async (req, res) => {
+// Verify OTP (Pilot) - Requires Auth to track which pilot verified it
+router.post('/verify-otp', auth, async (req, res) => {
     try {
         const { otp } = req.body;
         if (!otp) return res.status(400).json({ message: 'OTP is required' });
 
         // Find booking with this OTP
-        // In a real app, you might want additional filters (e.g. status='confirmed')
         const booking = await Booking.findOne({ otp })
-            .populate('userId', 'name email phone whatsappNumber callingNumber aadharNumber panNumber currentAddress permanentAddress otherDetails') // Fetch detailed user profile
-            .populate('birdId', 'name model');      // Fetch bird details
+            .populate('userId', 'name email phone whatsappNumber callingNumber aadharNumber panNumber currentAddress permanentAddress otherDetails')
+            .populate('birdId', 'name model');
 
         if (!booking) {
             return res.status(404).json({ message: 'Invalid OTP or Booking not found' });
         }
 
+        // Update status to ongoing and assign pilot
+        booking.status = 'ongoing';
+        booking.pilotId = req.user.id;
+        booking.otp = undefined; // Clear OTP so it can't be used again
+        await booking.save();
+
         res.json(booking);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Get Pilot Ride History
+router.get('/pilot-history', auth, async (req, res) => {
+    try {
+        // Find bookings assigned to this pilot
+        const bookings = await Booking.find({ pilotId: req.user.id })
+            .populate('userId', 'name email phone whatsappNumber callingNumber aadharNumber panNumber currentAddress permanentAddress otherDetails')
+            .populate('birdId', 'name model')
+            .sort({ createdAt: -1 }); // Newest first
+
+        res.json(bookings);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 });
 

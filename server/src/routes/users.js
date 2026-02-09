@@ -3,10 +3,19 @@ const router = express.Router();
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 
+const Pilot = require('../models/Pilot');
+
 // Get current user profile
 router.get('/me', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('-password');
+        let user;
+        if (req.user.role === 'pilot') {
+            user = await Pilot.findById(req.user.id).select('-password');
+        } else {
+            user = await User.findById(req.user.id).select('-password');
+        }
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
         res.json(user);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -28,7 +37,12 @@ router.put('/me', auth, async (req, res) => {
             otherDetails
         } = req.body;
 
-        const user = await User.findById(req.user.id);
+        let user;
+        if (req.user.role === 'pilot') {
+            user = await Pilot.findById(req.user.id);
+        } else {
+            user = await User.findById(req.user.id);
+        }
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -45,31 +59,24 @@ router.put('/me', auth, async (req, res) => {
         if (permanentAddress !== undefined) user.permanentAddress = permanentAddress;
         if (otherDetails !== undefined) user.otherDetails = otherDetails;
 
-        console.log('[Users API] Saving user with updated fields:', {
+        // Note: Email and Password are intentionally NOT updated here
+
+        console.log('[Users API] Saving user/pilot with updated fields:', {
             id: user._id,
             name: user.name,
             whatsappNumber: user.whatsappNumber,
-            phone: user.phone
+            phone: user.phone,
+            role: req.user.role
         });
 
         await user.save();
 
-        console.log('[Users API] User saved successfully');
+        console.log('[Users API] Saved successfully');
 
         // Return updated user without password
-        res.json({
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            whatsappNumber: user.whatsappNumber,
-            callingNumber: user.callingNumber,
-            aadharNumber: user.aadharNumber,
-            panNumber: user.panNumber,
-            currentAddress: user.currentAddress,
-            permanentAddress: user.permanentAddress,
-            otherDetails: user.otherDetails
-        });
+        const userObj = user.toObject();
+        delete userObj.password;
+        res.json(userObj);
     } catch (err) {
         console.error('Profile update error:', err);
         res.status(500).json({ message: err.message });

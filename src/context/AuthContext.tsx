@@ -136,18 +136,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const pilotLogin = async (email: string) => {
-        // Mock pilot login - in production this should hit the API
-        const userData: User = {
-            id: 'pilot_' + Date.now(),
-            name: 'Pilot User',
-            email,
-            role: 'pilot'
-        };
-        const token = 'mock_pilot_token_' + Date.now();
-        await AsyncStorage.setItem('auth_token', token);
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
-        setToken(token);
-        setUser(userData);
+        try {
+            // Use password '123456' as per requirement (or passed as argument, but here simpler)
+            const response = await client.post('/auth/pilot-login', { email, password: '123456' });
+            const { token: authToken, user: userData } = response.data;
+            await AsyncStorage.setItem('auth_token', authToken);
+            await AsyncStorage.setItem('user', JSON.stringify(userData));
+            setToken(authToken);
+            setUser(userData);
+        } catch (error) {
+            console.error('Pilot login failed:', error);
+            throw error; // Let UI handle error
+        }
     };
 
     const updateProfile = async (data: Partial<User>) => {

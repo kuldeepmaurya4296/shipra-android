@@ -5,6 +5,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { Plane, Clock, MapPin, Navigation, Info } from 'lucide-react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import client from '../api/client';
 
 type Props = StackScreenProps<RootStackParamList, 'RideStatus'>;
 
@@ -12,14 +13,37 @@ export default function RideStatusScreen({ navigation, route }: Props) {
     const { bookingId, otp } = route.params;
     const [statusScale] = useState(new Animated.Value(1));
 
+    // Poll for status change (confirmed -> ongoing)
+    useEffect(() => {
+        let active = true;
+        const interval = setInterval(async () => {
+            try {
+                // Fetch all bookings and find current one. 
+                // Optimized approach would be GET /bookings/:id but this works for now.
+                const res = await client.get('/bookings');
+                const currentBooking = res.data.find((b: any) => b._id === bookingId);
+
+                if (currentBooking && currentBooking.status === 'ongoing') {
+                    if (active) {
+                        navigation.replace('RideInProgress', { bookingId });
+                    }
+                }
+            } catch (e) {
+                console.log('[RideStatus] Polling error:', e);
+            }
+        }, 3000); // Check every 3 seconds
+
+        return () => {
+            active = false;
+            clearInterval(interval);
+        };
+    }, [bookingId, navigation]);
+
     // Simulate pulsing animation for the status indicator
     useEffect(() => {
         if (otp) {
             // Simulate sending OTP
             console.log(`[OTP SYSTEM] OTP Generated: ${otp}`);
-            console.log(`[OTP SYSTEM] Sending OTP to registered Email (user@shipra.com)...`);
-            console.log(`[OTP SYSTEM] Sending OTP to WhatsApp (+91 91919 19191)...`);
-            // In a real app we'd trigger a backend endpoint here
         }
 
         const pulse = Animated.loop(
@@ -32,9 +56,6 @@ export default function RideStatusScreen({ navigation, route }: Props) {
 
         return () => pulse.stop();
     }, []);
-
-    // Simulate "arrived" content after a few seconds or allow instant continue
-    // For this flow we assume the user tracks it and then decides to continue
 
     return (
         <SafeAreaView style={styles.container}>

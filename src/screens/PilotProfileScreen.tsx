@@ -4,7 +4,7 @@ import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import LinearGradient from 'react-native-linear-gradient';
 
-export default function PilotProfileScreen() {
+export default function PilotProfileScreen({ navigation }: any) {
     const { user, logout } = useAuth();
 
     return (
@@ -29,15 +29,26 @@ export default function PilotProfileScreen() {
                 </View>
 
                 <View style={styles.menu}>
-                    <TouchableOpacity style={styles.menuItem}>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => navigation.navigate('History')}
+                    >
                         <Text style={styles.menuText}>Ride History</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuItem}>
-                        <Text style={styles.menuText}>Pilot Settings</Text>
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => navigation.navigate('PilotEditProfile')}
+                    >
+                        <Text style={styles.menuText}>Edit Profile</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuItem}>
+
+                    {/* <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => navigation.navigate('SOS')}
+                    >
                         <Text style={styles.menuText}>Help & Support</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
 
                 <View style={styles.footer}>

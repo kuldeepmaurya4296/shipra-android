@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const UserSchema = new mongoose.Schema({
+const PilotSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -32,12 +32,12 @@ const UserSchema = new mongoose.Schema({
     currentAddress: { type: String },
     permanentAddress: { type: String },
     otherDetails: { type: String },
-    role: { type: String, enum: ['user', 'pilot'], default: 'user' },
+    role: { type: String, default: 'pilot' },
     createdAt: { type: Date, default: Date.now },
 });
 
 // Hash password before saving - only if password is modified
-UserSchema.pre('save', async function () {
+PilotSchema.pre('save', async function () {
     // Skip hashing if password hasn't been modified
     if (!this.isModified('password')) return;
 
@@ -45,4 +45,4 @@ UserSchema.pre('save', async function () {
     this.password = await bcrypt.hash(this.password, 10);
 });
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('Pilot', PilotSchema);

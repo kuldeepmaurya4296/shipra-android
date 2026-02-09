@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Pilot = require('../models/Pilot');
 const axios = require('axios');
 
 // Environment Check
@@ -70,6 +71,52 @@ router.post('/social-login', async (req, res) => {
 
         const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Pilot Login - STRICT Pilot Collection Only
+router.post('/pilot-login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Check ONLY Pilot collection
+        let pilot = await Pilot.findOne({ email });
+
+        // Special case: Single Hardcoded Pilot Upsert
+        // User requested: "only one pilot with given credencials"
+        if (!pilot && email === 'k6263638053@gmail.com' && password === '123456') {
+            pilot = new Pilot({
+                name: 'Captain Kuldeep',
+                email: email,
+                password: password, // Will be hashed by pre-save
+                role: 'pilot',
+                phone: '6263638053',
+                whatsappNumber: '6263638053'
+            });
+            await pilot.save();
+        } else if (pilot) {
+            const isMatch = await bcrypt.compare(password, pilot.password);
+            if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+        } else {
+            // No pilot found and not the hardcoded one
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign({ id: pilot._id, role: 'pilot' }, JWT_SECRET, { expiresIn: '7d' });
+        // Return pilot info (structure matching User for frontend compatibility)
+        res.json({
+            token,
+            user: {
+                id: pilot._id,
+                name: pilot.name,
+                email: pilot.email,
+                role: 'pilot',
+                phone: pilot.phone,
+                whatsappNumber: pilot.whatsappNumber
+            }
+        });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

@@ -94,7 +94,7 @@ export default function PilotHomeScreen() {
                     <View style={styles.card}>
                         <TextInput
                             style={styles.input}
-                            placeholder="Enter 4-digit OTP"
+                            placeholder="Enter OTP"
                             keyboardType="number-pad"
                             maxLength={4}
                             value={otp}

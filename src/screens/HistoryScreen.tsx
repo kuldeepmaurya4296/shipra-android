@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import { colors } from '../theme/colors';
 import NavigationBar from '../components/NavigationBar';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -17,6 +17,7 @@ interface Booking {
     date: string;
     status: string;
     amount: number;
+    otp?: string;
 }
 
 export default function HistoryScreen({ navigation }: Props) {
@@ -70,14 +71,25 @@ export default function HistoryScreen({ navigation }: Props) {
                         </View>
                     ) : (
                         bookings.map((item) => (
-                            <View key={item._id} style={styles.bookingCard}>
+                            <TouchableOpacity
+                                key={item._id}
+                                style={styles.bookingCard}
+                                onPress={() => {
+                                    if (item.status === 'confirmed') {
+                                        navigation.navigate('RideStatus', { bookingId: item._id, otp: item.otp });
+                                    } else if (item.status === 'ongoing') {
+                                        navigation.navigate('RideInProgress', { bookingId: item._id });
+                                    }
+                                }}
+                                disabled={item.status === 'completed' || item.status === 'cancelled'}
+                            >
                                 <View style={styles.cardHeader}>
                                     <View style={styles.birdInfo}>
                                         <Plane size={16} color={colors.primary} />
                                         <Text style={styles.birdNumber}>{item.birdNumber}</Text>
                                     </View>
-                                    <View style={[styles.statusBadge, { backgroundColor: item.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)' }]}>
-                                        <Text style={[styles.statusText, { color: item.status === 'confirmed' ? colors.success : colors.accent }]}>
+                                    <View style={[styles.statusBadge, { backgroundColor: item.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : item.status === 'ongoing' ? 'rgba(79, 70, 229, 0.1)' : 'rgba(245, 158, 11, 0.1)' }]}>
+                                        <Text style={[styles.statusText, { color: item.status === 'confirmed' ? colors.success : item.status === 'ongoing' ? colors.primary : colors.accent }]}>
                                             {item.status.toUpperCase()}
                                         </Text>
                                     </View>
@@ -104,7 +116,7 @@ export default function HistoryScreen({ navigation }: Props) {
                                         <Text style={styles.price}>₹{item.amount}</Text>
                                     </View>
                                 </View>
-                            </View>
+                            </TouchableOpacity>
                         ))
                     )}
                 </ScrollView>
