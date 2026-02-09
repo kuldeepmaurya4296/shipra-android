@@ -92,7 +92,7 @@ export default function SplashScreen({ navigation }: Props) {
                         onPress={() => navigation.navigate('Login', { userType: 'pilot' })}
                         activeOpacity={0.7}
                     >
-                        <Text style={styles.pilotButtonText}>Login with Pilot</Text>
+                        <Text style={styles.pilotButtonText}>Login as Pilot</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </View>

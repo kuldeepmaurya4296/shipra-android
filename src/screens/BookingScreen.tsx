@@ -99,9 +99,9 @@ export default function BookingScreen({ route, navigation }: Props) {
                 const totalDuration = Math.ceil(travelTime + 4); // +2 min Takeoff, +2 min Landing
                 setDuration(totalDuration);
 
-                // Calculate Fare: 3000 per 15 min
-                const calculatedFare = (totalDuration / 15) * 3000;
-                setFare(Math.ceil(calculatedFare));
+                // Calculate Fare: 2000 per 15 min block
+                const calculatedFare = Math.ceil(totalDuration / 15) * 2000;
+                setFare(calculatedFare);
 
                 // Fit map
                 setTimeout(() => {
@@ -279,7 +279,11 @@ export default function BookingScreen({ route, navigation }: Props) {
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
                         <Clock size={18} color={colors.primary} />
-                        <Text style={styles.statValue}>{duration} min</Text>
+                        <Text style={styles.statValue}>
+                            {duration >= 60
+                                ? `${Math.floor(duration / 60)} h ${duration % 60} min`
+                                : `${duration} min`}
+                        </Text>
                         <Text style={styles.statLabel}>Est. Time</Text>
                     </View>
                     <View style={styles.statDivider} />
@@ -330,13 +334,14 @@ export default function BookingScreen({ route, navigation }: Props) {
                 {/* Fare Breakdown */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Fare Breakdown</Text>
+
                     <View style={styles.row}>
-                        <Text style={styles.label}>Rate: ₹3000 / 15 min</Text>
-                        <Text style={styles.value}>₹ 3,000</Text>
-                    </View>
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Total Duration (+4m ops)</Text>
-                        <Text style={styles.value}>{duration} mins</Text>
+                        <Text style={styles.label}>Total Duration</Text>
+                        <Text style={styles.value}>
+                            {duration >= 60
+                                ? `${Math.floor(duration / 60)} h ${duration % 60} min`
+                                : `${duration} min`}
+                        </Text>
                     </View>
                     <View style={styles.divider} />
                     <View style={styles.priceRow}>
