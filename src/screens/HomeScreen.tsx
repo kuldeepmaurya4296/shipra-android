@@ -15,7 +15,7 @@ type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const [fromLocation, setFromLocation] = useState('Bhopal');
+    const [fromLocation, setFromLocation] = useState('');
     const [toLocation, setToLocation] = useState('');
     const [stations, setStations] = useState<any[]>([]);
     const [birds, setBirds] = useState<any[]>([]);
@@ -101,11 +101,21 @@ export default function HomeScreen({ navigation }: Props) {
     };
 
     const handleBookBird = () => {
-        if (!toLocation) {
-            Alert.alert('Selection Required', 'Please enter your destination.');
+        if (!fromLocation || !toLocation) {
+            Alert.alert('Selection Required', 'Please enter both departing and destination stations.');
+            return;
+        }
+        if (fromLocation === toLocation) {
+            Alert.alert('Invalid Route', 'Origin and destination cannot be the same.');
             return;
         }
         navigation.navigate('Booking', { from: fromLocation, to: toLocation });
+    };
+
+    const handleSwapLocations = () => {
+        const temp = fromLocation;
+        setFromLocation(toLocation);
+        setToLocation(temp);
     };
 
     const handleCheckNearbyBirds = () => {
@@ -129,7 +139,13 @@ export default function HomeScreen({ navigation }: Props) {
                     </View>
                     <View style={styles.locationContainer}>
                         <MapPin size={14} color={colors.primary} />
-                        <Text style={styles.locationText}>Ready for takeoff from {fromLocation}</Text>
+                        <Text style={styles.locationText}>
+                            {fromLocation && toLocation
+                                ? `Routing: ${fromLocation} to ${toLocation}`
+                                : fromLocation
+                                    ? `Ready to fly from ${fromLocation}`
+                                    : 'Where are you flying from?'}
+                        </Text>
                     </View>
                 </Animated.View>
             </LinearGradient>
@@ -142,10 +158,12 @@ export default function HomeScreen({ navigation }: Props) {
                     <View style={styles.inputGroup}>
                         <View style={{ zIndex: 20 }}>
                             <View style={styles.inputWrapper}>
-                                <PlaneTakeoff size={20} color={colors.primary} />
+                                <View style={styles.indicatorOuter}>
+                                    <View style={[styles.indicatorInner, { backgroundColor: colors.primary }]} />
+                                </View>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="From"
+                                    placeholder="Enter origin station"
                                     value={fromLocation}
                                     onChangeText={(text) => {
                                         setFromLocation(text);
@@ -154,6 +172,11 @@ export default function HomeScreen({ navigation }: Props) {
                                     onFocus={() => filterStations(fromLocation, 'from')}
                                     placeholderTextColor={colors.mutedForeground}
                                 />
+                                {fromLocation ? (
+                                    <TouchableOpacity onPress={() => { setFromLocation(''); filterStations('', 'from'); }}>
+                                        <Text style={{ color: colors.mutedForeground, marginRight: 8 }}>✕</Text>
+                                    </TouchableOpacity>
+                                ) : null}
                             </View>
                             {showFromSuggestions && filteredFromStations.length > 0 && (
                                 <View style={styles.suggestionsContainer}>
@@ -163,23 +186,42 @@ export default function HomeScreen({ navigation }: Props) {
                                             style={styles.suggestionItem}
                                             onPress={() => handleSelectStation(station.name, 'from')}
                                         >
-                                            <Text style={styles.suggestionText}>{station.name} ({station.city})</Text>
+                                            <View style={styles.suggestionIcon}>
+                                                <MapPin size={16} color={colors.mutedForeground} />
+                                            </View>
+                                            <View>
+                                                <Text style={styles.suggestionText}>{station.name}</Text>
+                                                <Text style={styles.suggestionSubtext}>{station.city}, India</Text>
+                                            </View>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
                             )}
                         </View>
 
-                        <View style={styles.routeLine}>
-                            <View style={styles.verticalLine} />
+                        <View style={styles.routeConnector}>
+                            <View style={styles.verticalConnector} />
+                            <TouchableOpacity
+                                style={styles.swapButton}
+                                onPress={handleSwapLocations}
+                                activeOpacity={0.7}
+                            >
+                                <Animated.View>
+                                    <View style={styles.swapIconContainer}>
+                                        <NavigationIcon size={16} color={colors.primary} />
+                                    </View>
+                                </Animated.View>
+                            </TouchableOpacity>
                         </View>
 
                         <View style={{ zIndex: 10 }}>
                             <View style={styles.inputWrapper}>
-                                <PlaneLanding size={20} color={colors.accent} />
+                                <View style={styles.indicatorOuter}>
+                                    <View style={[styles.indicatorInner, { backgroundColor: colors.accent }]} />
+                                </View>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Where to?"
+                                    placeholder="Enter destination station"
                                     value={toLocation}
                                     onChangeText={(text) => {
                                         setToLocation(text);
@@ -188,6 +230,11 @@ export default function HomeScreen({ navigation }: Props) {
                                     onFocus={() => filterStations(toLocation, 'to')}
                                     placeholderTextColor={colors.mutedForeground}
                                 />
+                                {toLocation ? (
+                                    <TouchableOpacity onPress={() => { setToLocation(''); filterStations('', 'to'); }}>
+                                        <Text style={{ color: colors.mutedForeground, marginRight: 8 }}>✕</Text>
+                                    </TouchableOpacity>
+                                ) : null}
                             </View>
                             {showToSuggestions && filteredToStations.length > 0 && (
                                 <View style={styles.suggestionsContainer}>
@@ -197,7 +244,13 @@ export default function HomeScreen({ navigation }: Props) {
                                             style={styles.suggestionItem}
                                             onPress={() => handleSelectStation(station.name, 'to')}
                                         >
-                                            <Text style={styles.suggestionText}>{station.name} ({station.city})</Text>
+                                            <View style={styles.suggestionIcon}>
+                                                <MapPin size={16} color={colors.mutedForeground} />
+                                            </View>
+                                            <View>
+                                                <Text style={styles.suggestionText}>{station.name}</Text>
+                                                <Text style={styles.suggestionSubtext}>{station.city}, India</Text>
+                                            </View>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
@@ -372,15 +425,65 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: colors.foreground,
     },
-    routeLine: {
-        height: 20,
+    routeConnector: {
+        height: 30,
         marginLeft: 26,
+        justifyContent: 'center',
     },
-    verticalLine: {
-        width: 2,
+    verticalConnector: {
+        width: 1,
         height: '100%',
-        backgroundColor: colors.primary,
-        opacity: 0.3,
+        backgroundColor: colors.border,
+        position: 'absolute',
+        left: 0,
+    },
+    swapButton: {
+        position: 'absolute',
+        right: 0,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: colors.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+    },
+    swapIconContainer: {
+        transform: [{ rotate: '90deg' }],
+    },
+    indicatorOuter: {
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    indicatorInner: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    suggestionIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#f1f5f9',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    suggestionSubtext: {
+        fontSize: 12,
+        color: colors.mutedForeground,
+        marginTop: 2,
     },
     bookButton: {
         backgroundColor: colors.primary,

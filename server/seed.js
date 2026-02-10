@@ -13,14 +13,24 @@ const Booking = require('./src/models/Booking');
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const stations = [
-    { name: 'Bhopal', code: 'BHO', city: 'Bhopal', country: 'India', location: { lat: 23.2599, lng: 77.4126 } },
-    { name: 'Indore', code: 'IDR', city: 'Indore', country: 'India', location: { lat: 22.7196, lng: 75.8577 } },
-    { name: 'Ujjain', code: 'UJJ', city: 'Ujjain', country: 'India', location: { lat: 23.1765, lng: 75.7885 } },
-    { name: 'Rewa', code: 'REW', city: 'Rewa', country: 'India', location: { lat: 24.5362, lng: 81.3037 } },
-    { name: 'Satna', code: 'STA', city: 'Satna', country: 'India', location: { lat: 24.6005, lng: 80.8322 } },
-    { name: 'Vidisha', code: 'BHS', city: 'Vidisha', country: 'India', location: { lat: 23.5256, lng: 77.8081 } },
-    { name: 'Sehore', code: 'SEH', city: 'Sehore', country: 'India', location: { lat: 23.2030, lng: 77.0844 } },
-    { name: 'Hoshangabad', code: 'HBD', city: 'Narmadapuram', country: 'India', location: { lat: 22.7516, lng: 77.7294 } }
+    { name: 'Bhopal Central', code: 'BHO', city: 'Bhopal', country: 'India', location: { lat: 23.2599, lng: 77.4126 } },
+    { name: 'Indore Junction', code: 'IDR', city: 'Indore', country: 'India', location: { lat: 22.7196, lng: 75.8577 } },
+    { name: 'Ujjain Mahakal', code: 'UJJ', city: 'Ujjain', country: 'India', location: { lat: 23.1765, lng: 75.7885 } },
+    { name: 'Rewa City', code: 'REW', city: 'Rewa', country: 'India', location: { lat: 24.5362, lng: 81.3037 } },
+    { name: 'Satna Main', code: 'STA', city: 'Satna', country: 'India', location: { lat: 24.6005, lng: 80.8322 } },
+    { name: 'Vidisha Town', code: 'BHS', city: 'Vidisha', country: 'India', location: { lat: 23.5256, lng: 77.8081 } },
+    { name: 'Sehore Station', code: 'SEH', city: 'Sehore', country: 'India', location: { lat: 23.2030, lng: 77.0844 } },
+    { name: 'Hoshangabad Ghat', code: 'HBD', city: 'Narmadapuram', country: 'India', location: { lat: 22.7516, lng: 77.7294 } },
+    { name: 'Delhi Terminal 3', code: 'DEL', city: 'Delhi', country: 'India', location: { lat: 28.5562, lng: 77.1000 } },
+    { name: 'Mumbai International', code: 'BOM', city: 'Mumbai', country: 'India', location: { lat: 19.0896, lng: 72.8656 } },
+    { name: 'Bangalore Tech Park', code: 'BLR', city: 'Bangalore', country: 'India', location: { lat: 13.1986, lng: 77.7066 } },
+    { name: 'Hyderabad Central', code: 'HYD', city: 'Hyderabad', country: 'India', location: { lat: 17.2403, lng: 78.4294 } },
+    { name: 'Chennai Port', code: 'MAA', city: 'Chennai', country: 'India', location: { lat: 12.9941, lng: 80.1709 } },
+    { name: 'Kolkata City', code: 'CCU', city: 'Kolkata', country: 'India', location: { lat: 22.6420, lng: 88.4467 } },
+    { name: 'Pune West', code: 'PNQ', city: 'Pune', country: 'India', location: { lat: 18.5820, lng: 73.9197 } },
+    { name: 'Ahmedabad North', code: 'AMD', city: 'Ahmedabad', country: 'India', location: { lat: 23.0734, lng: 72.6347 } },
+    { name: 'Jaipur Pink City', code: 'JAI', city: 'Jaipur', country: 'India', location: { lat: 26.8242, lng: 75.8122 } },
+    { name: 'Lucknow Metro', code: 'LKO', city: 'Lucknow', country: 'India', location: { lat: 26.7606, lng: 80.8893 } }
 ];
 
 const birds = [

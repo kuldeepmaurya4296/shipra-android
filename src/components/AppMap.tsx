@@ -74,20 +74,37 @@ const LEAFLET_HTML = `
         // Icons
         var stationIcon = L.divIcon({
             className: 'custom-icon',
-            html: '<div style="background-color: #4f46e5; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
-            iconSize: [12, 12]
+            html: '<div style="background-color: #4f46e5; width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
         });
 
         var birdIcon = L.divIcon({
             className: 'custom-icon',
-            html: '<div style="background-color: #10b981; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
-            iconSize: [16, 16]
+            html: '<div style="background-color: #10b981; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
         });
 
         var userIcon = L.divIcon({
             className: 'custom-icon',
-            html: '<div style="background-color: #3b82f6; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);"></div>',
-            iconSize: [12, 12]
+            html: '<div style="background-color: #3b82f6; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 2px 4px rgba(0,0,0,0.2);"></div>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+        });
+
+        var startIcon = L.divIcon({
+            className: 'custom-icon',
+            html: '<div style="background-color: #4f46e5; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">A</div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+
+        var endIcon = L.divIcon({
+            className: 'custom-icon',
+            html: '<div style="background-color: #f59e0b; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 6px rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">B</div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
         });
 
         // Handle updates from RN
@@ -108,11 +125,7 @@ const LEAFLET_HTML = `
 
                 // Add User Location
                 if (payload.userLocation) {
-                    markers.user = L.marker([payload.userLocation.latitude, payload.userLocation.longitude], {icon: userIcon}).addTo(map);
-                    // Only fly to user if no other significant markers
-                    if (!payload.routeStart && !payload.routeEnd) {
-                        // map.flyTo([payload.userLocation.latitude, payload.userLocation.longitude], 14);
-                    }
+                    markers.user = L.marker([payload.userLocation.latitude, payload.userLocation.longitude], {icon: userIcon, zIndexOffset: 1000}).addTo(map);
                 }
 
                 // Add Stations
@@ -120,7 +133,7 @@ const LEAFLET_HTML = `
                     payload.stations.forEach(st => {
                         if (st.latitude && st.longitude) {
                             var m = L.marker([st.latitude, st.longitude], {icon: stationIcon})
-                                .bindPopup(st.name)
+                                .bindPopup("<b>" + st.name + "</b><br>" + st.city)
                                 .addTo(map);
                             markers.stations.push(m);
                         }
@@ -132,7 +145,7 @@ const LEAFLET_HTML = `
                     payload.birds.forEach(bird => {
                         if (bird.currentLocation) {
                             var m = L.marker([bird.currentLocation.latitude, bird.currentLocation.longitude], {icon: birdIcon})
-                                .bindPopup(bird.name || 'Bird')
+                                .bindPopup("<b>" + (bird.name || 'Bird') + "</b><br>Status: " + bird.status)
                                 .addTo(map);
                             markers.birds.push(m);
                         }
@@ -143,20 +156,29 @@ const LEAFLET_HTML = `
                 var latlngs = [];
                 if (payload.routeStart) {
                     var start = [payload.routeStart.latitude, payload.routeStart.longitude];
-                    markers.routeStart = L.marker(start).addTo(map);
+                    markers.routeStart = L.marker(start, {icon: startIcon, zIndexOffset: 2000}).addTo(map);
                     latlngs.push(start);
                 }
                 if (payload.routeEnd) {
                     var end = [payload.routeEnd.latitude, payload.routeEnd.longitude];
-                    markers.routeEnd = L.marker(end).addTo(map);
+                    markers.routeEnd = L.marker(end, {icon: endIcon, zIndexOffset: 2000}).addTo(map);
                     latlngs.push(end);
                 }
 
                 if (latlngs.length === 2) {
-                    routePolyline = L.polyline(latlngs, {color: 'blue', weight: 4, opacity: 0.7}).addTo(map);
+                    // Create more "aviation" style line (curved or dashed)
+                    // For now, nice thick indigo line with a glow effect
+                    routePolyline = L.polyline(latlngs, {
+                        color: '#4f46e5',
+                        weight: 6,
+                        opacity: 0.8,
+                        dashArray: '10, 10',
+                        lineCap: 'round'
+                    }).addTo(map);
+                    
                     map.fitBounds(routePolyline.getBounds(), {padding: [50, 50]});
                 } else if (payload.userLocation) {
-                     map.setView([payload.userLocation.latitude, payload.userLocation.longitude], 14);
+                     map.setView([payload.userLocation.latitude, payload.userLocation.longitude], 12);
                 }
 
             } catch (e) {
