@@ -5,12 +5,13 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { Plane, Navigation, Activity, ArrowRight, ShieldAlert, CheckCircle, Lock, Unlock, Droplet, Wrench } from 'lucide-react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import client from '../api/client';
 
 type Props = StackScreenProps<RootStackParamList, 'RideInProgress'>;
 
 export default function RideInProgressScreen({ navigation, route }: Props) {
     const { bookingId } = route.params;
-    const [timeLeft, setTimeLeft] = useState(8); // Start at 8 min
+    const [bookingDetails, setBookingDetails] = useState<any>(null);
     const planeAnim = useRef(new Animated.Value(0)).current;
 
     const [acTemp, setAcTemp] = useState(24);
@@ -20,10 +21,31 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
     const decreaseTemp = () => setAcTemp(prev => Math.max(prev - 1, 16));
 
     useEffect(() => {
-        // Mock countdown
+        let active = true;
+
+        const fetchStatus = async () => {
+            try {
+                const response = await client.get(`/bookings/${bookingId}`);
+                const booking = response.data;
+
+                if (booking) {
+                    setBookingDetails(booking);
+                    if (booking.status === 'completed') {
+                        navigation.replace('RideReceipt', { booking });
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching booking status:", error);
+            }
+        };
+
+        // Initial fetch
+        fetchStatus();
+
+        // Polling interval
         const interval = setInterval(() => {
-            setTimeLeft(prev => Math.max(0, prev - 1));
-        }, 60000); // Reduce every minute (speed up for demo?)
+            if (active) fetchStatus();
+        }, 3000);
 
         // Mock plane movement across screen
         Animated.loop(
@@ -34,15 +56,14 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
             })
         ).start();
 
-        return () => clearInterval(interval);
-    }, []);
+        return () => {
+            active = false;
+            clearInterval(interval);
+        };
+    }, [bookingId, navigation]);
 
     const handleSOS = () => {
         navigation.navigate('SOS', { bookingId });
-    };
-
-    const handleComplete = () => {
-        navigation.navigate('History');
     };
 
     const planeTranslateX = planeAnim.interpolate({
@@ -54,7 +75,9 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Bird in Progress</Text>
-                <Text style={styles.headerSubtitle}>Bird #42 • Altitude: 250m</Text>
+                <Text style={styles.headerSubtitle}>
+                    {bookingDetails ? `Bird ${bookingDetails.birdId?.name || bookingDetails.birdNumber}` : 'Bird #42'} • Altitude: 250m
+                </Text>
             </View>
 
             {/* Live Route Visualization */}
@@ -71,7 +94,7 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
                 >
                     <Marker
                         coordinate={{ latitude: 23.2599, longitude: 77.4126 }}
-                        title="Bird #42"
+                        title={bookingDetails ? bookingDetails.birdNumber : "Bird #42"}
                         description="Altitude: 250m"
                     >
                         <Animated.View style={{ transform: [{ translateX: planeTranslateX }] }}>
@@ -85,8 +108,10 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
             <Text style={styles.sectionLabel}>BIRD STATISTICS</Text>
             <View style={styles.gridContainer}>
                 <View style={styles.gridItem}>
-                    <Text style={styles.gridLabel}>Time Remaining</Text>
-                    <Text style={styles.gridValue}>{timeLeft} min</Text>
+                    <Text style={styles.gridLabel}>Status</Text>
+                    <Text style={[styles.gridValue, { color: colors.success }]}>
+                        {bookingDetails?.status?.toUpperCase() || 'ONGOING'}
+                    </Text>
                 </View>
                 <View style={styles.gridItem}>
                     <Text style={styles.gridLabel}>Speed</Text>
@@ -112,7 +137,7 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
                         <TouchableOpacity onPress={decreaseTemp} style={styles.tempBtn}>
                             <Text style={styles.tempBtnText}>-</Text>
                         </TouchableOpacity>
-                        <Text style={styles.tempValue}>{acTemp}°C</Text>
+                        <Text style={styles.tempValue}>{acTemp}{'\u00B0'}C</Text>
                         <TouchableOpacity onPress={increaseTemp} style={styles.tempBtn}>
                             <Text style={styles.tempBtnText}>+</Text>
                         </TouchableOpacity>
@@ -164,14 +189,7 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
             </ScrollView>
 
             <View style={styles.actionContainer}>
-                <TouchableOpacity
-                    style={styles.completeButton}
-                    onPress={handleComplete}
-                >
-                    <Text style={styles.buttonText}>Complete Bird</Text>
-                    <ArrowRight size={20} color="#fff" />
-                </TouchableOpacity>
-
+                {/* User cannot complete ride manually anymore */}
                 <TouchableOpacity
                     style={styles.sosButton}
                     onPress={handleSOS}

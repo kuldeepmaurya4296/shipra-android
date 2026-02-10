@@ -39,8 +39,16 @@ export default function PilotHistoryScreen({ navigation }: any) {
     };
 
     useEffect(() => {
+        // Initial fetch
         fetchBookings();
-    }, []);
+
+        // Listen for focus events
+        const unsubscribe = navigation.addListener('focus', () => {
+            fetchBookings();
+        });
+
+        return unsubscribe;
+    }, [navigation]);
 
     const onRefresh = () => {
         setRefreshing(true);

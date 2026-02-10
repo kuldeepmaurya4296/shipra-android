@@ -201,4 +201,21 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
+// Get Single Booking by ID
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id)
+            .populate('birdId', 'name model')
+            .populate('pilotId', 'name phone')
+            .populate('userId', 'name email phone');
+
+        if (!booking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+        res.json(booking);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 module.exports = router;

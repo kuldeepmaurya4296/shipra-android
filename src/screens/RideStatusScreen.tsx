@@ -18,10 +18,9 @@ export default function RideStatusScreen({ navigation, route }: Props) {
         let active = true;
         const interval = setInterval(async () => {
             try {
-                // Fetch all bookings and find current one. 
-                // Optimized approach would be GET /bookings/:id but this works for now.
-                const res = await client.get('/bookings');
-                const currentBooking = res.data.find((b: any) => b._id === bookingId);
+                // Optimized: Fetch only the current booking
+                const res = await client.get(`/bookings/${bookingId}`);
+                const currentBooking = res.data;
 
                 if (currentBooking && currentBooking.status === 'ongoing') {
                     if (active) {

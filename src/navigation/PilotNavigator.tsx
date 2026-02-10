@@ -10,6 +10,8 @@ import SOSScreen from '../screens/SOSScreen';
 import { Home, User, Clock } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 
+import RideReceiptScreen from '../screens/RideReceiptScreen';
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -62,6 +64,7 @@ export default function PilotNavigator() {
             <Stack.Screen name="PilotEditProfile" component={PilotEditProfileScreen} />
             {/* <Stack.Screen name="SOS" component={SOSScreen} /> */}
             <Stack.Screen name="PilotRideDetails" component={PilotRideDetailsScreen} />
+            <Stack.Screen name="RideReceipt" component={RideReceiptScreen} />
         </Stack.Navigator>
     );
 }

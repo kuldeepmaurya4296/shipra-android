@@ -16,7 +16,8 @@ export default function RideReceiptScreen({ route, navigation }: Props) {
     // Determine the passenger name (User or Pilot viewing)
     // If User is viewing, passenger is 'user'. If Pilot is viewing, passenger is 'booking.userId.name'
     const passengerName = booking.userId?.name || user?.name || 'Guest User';
-    const pilotName = booking.pilotId?.name || 'Captain Kuldeep';
+    // Ensure safe access to pilot name
+    const pilotName = booking.pilotId?.name || 'Assigned Pilot';
 
     const generateHtml = () => {
         const dateStr = new Date(booking.date).toLocaleDateString();
@@ -139,7 +140,9 @@ export default function RideReceiptScreen({ route, navigation }: Props) {
     const handleShare = async () => {
         try {
             await Share.share({
-                message: `Shipra Ride Receipt\nAmout: ₹${booking.amount}\nFrom: ${booking.from}\nTo: ${booking.to}\nDate: ${new Date(booking.date).toLocaleDateString()}`,
+                message: `Shipra Ride Receipt\nAmount: ₹${booking.amount}\n` +
+                    `From: ${booking.from}\nTo: ${booking.to}\n` +
+                    `Date: ${new Date(booking.date).toLocaleDateString()}`,
             });
         } catch (error: any) {
             Alert.alert(error.message);
