@@ -4,7 +4,7 @@ import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { Plane, Clock, MapPin, Navigation, Info } from 'lucide-react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import DummyMap from '../components/DummyMap';
 import client from '../api/client';
 
 type Props = StackScreenProps<RootStackParamList, 'RideStatus'>;
@@ -65,26 +65,7 @@ export default function RideStatusScreen({ navigation, route }: Props) {
 
             {/* Tracker Map Area */}
             <View style={styles.mapContainer}>
-                <MapView
-                    provider={PROVIDER_GOOGLE}
-                    style={StyleSheet.absoluteFillObject}
-                    initialRegion={{
-                        latitude: 23.2599,
-                        longitude: 77.4126,
-                        latitudeDelta: 0.05,
-                        longitudeDelta: 0.05,
-                    }}
-                >
-                    <Marker
-                        coordinate={{ latitude: 23.2599, longitude: 77.4126 }}
-                        title="Bird #42"
-                        description="Arriving in 4 mins"
-                    >
-                        <View style={styles.trackerIconContainer}>
-                            <Plane size={24} color={colors.primary} style={{ transform: [{ rotate: '-45deg' }] }} />
-                        </View>
-                    </Marker>
-                </MapView>
+                <DummyMap style={StyleSheet.absoluteFillObject} />
                 <Text style={styles.mapLabel}>LIVE TRACKING</Text>
             </View>
 

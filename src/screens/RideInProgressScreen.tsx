@@ -4,7 +4,7 @@ import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { Plane, Navigation, Activity, ArrowRight, ShieldAlert, CheckCircle, Lock, Unlock, Droplet, Wrench } from 'lucide-react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import DummyMap from '../components/DummyMap';
 import client from '../api/client';
 
 type Props = StackScreenProps<RootStackParamList, 'RideInProgress'>;
@@ -82,26 +82,7 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
 
             {/* Live Route Visualization */}
             <View style={styles.routeContainer}>
-                <MapView
-                    provider={PROVIDER_GOOGLE}
-                    style={StyleSheet.absoluteFillObject}
-                    initialRegion={{
-                        latitude: 23.2599,
-                        longitude: 77.4126,
-                        latitudeDelta: 0.1,
-                        longitudeDelta: 0.1,
-                    }}
-                >
-                    <Marker
-                        coordinate={{ latitude: 23.2599, longitude: 77.4126 }}
-                        title={bookingDetails ? bookingDetails.birdNumber : "Bird #42"}
-                        description="Altitude: 250m"
-                    >
-                        <Animated.View style={{ transform: [{ translateX: planeTranslateX }] }}>
-                            <Plane size={32} color={colors.primary} style={{ transform: [{ rotate: '-45deg' }] }} />
-                        </Animated.View>
-                    </Marker>
-                </MapView>
+                <DummyMap style={StyleSheet.absoluteFillObject} />
             </View>
 
             {/* Bird Statistics */}

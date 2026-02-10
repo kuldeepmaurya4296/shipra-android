@@ -8,7 +8,7 @@ import { RootStackParamList } from '../../App';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Clock, MapPin, Calendar, CreditCard, Ruler, Zap, Plane } from 'lucide-react-native';
 import client from '../api/client';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import DummyMap from '../components/DummyMap';
 import { RAZORPAY_KEY_ID } from '@env';
 import RazorpayCheckout from 'react-native-razorpay';
 
@@ -47,7 +47,7 @@ export default function BookingScreen({ route, navigation }: Props) {
     // Map Coords
     const [fromCoord, setFromCoord] = useState<any>(null);
     const [toCoord, setToCoord] = useState<any>(null);
-    const mapRef = useRef<MapView>(null);
+    // const mapRef = useRef<MapView>(null);
 
     useEffect(() => {
         fetchData();
@@ -104,15 +104,16 @@ export default function BookingScreen({ route, navigation }: Props) {
                 setFare(calculatedFare);
 
                 // Fit map
-                setTimeout(() => {
-                    mapRef.current?.fitToCoordinates([
-                        { latitude: fromStation.location.lat, longitude: fromStation.location.lng },
-                        { latitude: toStation.location.lat, longitude: toStation.location.lng }
-                    ], {
-                        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-                        animated: true
-                    });
-                }, 500);
+                // Fit map moved to DummyMap logic or handled implicitly
+                // setTimeout(() => {
+                //     mapRef.current?.fitToCoordinates([
+                //         { latitude: fromStation.location.lat, longitude: fromStation.location.lng },
+                //         { latitude: toStation.location.lat, longitude: toStation.location.lng }
+                //     ], {
+                //         edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+                //         animated: true
+                //     });
+                // }, 500);
             }
 
         } catch (error) {
@@ -248,61 +249,7 @@ export default function BookingScreen({ route, navigation }: Props) {
                 {/* Map Route Visualization */}
                 <View style={styles.mapCard}>
                     {fromCoord && toCoord ? (
-                        <MapView
-                            ref={mapRef}
-                            provider={PROVIDER_GOOGLE}
-                            style={StyleSheet.absoluteFillObject}
-                            initialRegion={{
-                                latitude: (fromCoord.latitude + toCoord.latitude) / 2,
-                                longitude: (fromCoord.longitude + toCoord.longitude) / 2,
-                                latitudeDelta: Math.abs(fromCoord.latitude - toCoord.latitude) * 2,
-                                longitudeDelta: Math.abs(fromCoord.longitude - toCoord.longitude) * 2,
-                            }}
-                        >
-                            {/* Route Line */}
-                            <Polyline
-                                coordinates={[fromCoord, toCoord]}
-                                strokeWidth={4}
-                                strokeColor={colors.primary}
-                                lineDashPattern={[1]}
-                            />
-
-                            {/* Start/End Markers */}
-                            <Marker coordinate={fromCoord} title={from} description="Departure">
-                                <View style={styles.markerBadge}><Text style={styles.markerText}>A</Text></View>
-                            </Marker>
-                            <Marker coordinate={toCoord} title={to} description="Destination">
-                                <View style={[styles.markerBadge, { backgroundColor: colors.accent }]}><Text style={styles.markerText}>B</Text></View>
-                            </Marker>
-
-                            {/* Bird Markers */}
-                            {birds.map((bird, index) => (
-                                bird.location && (
-                                    <Marker
-                                        key={`bird-${index}`}
-                                        coordinate={{
-                                            latitude: bird.location.lat,
-                                            longitude: bird.location.lng
-                                        }}
-                                        title={bird.name}
-                                        description={bird.model}
-                                        opacity={selectedBird?._id === bird._id ? 1 : 0.6}
-                                        zIndex={selectedBird?._id === bird._id ? 10 : 1}
-                                    >
-                                        <View style={[
-                                            styles.birdMarker,
-                                            selectedBird?._id === bird._id && styles.selectedBirdMarker
-                                        ]}>
-                                            <Plane
-                                                size={selectedBird?._id === bird._id ? 20 : 16}
-                                                color="#fff"
-                                                style={{ transform: [{ rotate: '-45deg' }] }}
-                                            />
-                                        </View>
-                                    </Marker>
-                                )
-                            ))}
-                        </MapView>
+                        <DummyMap style={StyleSheet.absoluteFillObject} />
                     ) : (
                         <View style={styles.mapLoading}>
                             <ActivityIndicator size="large" color={colors.primary} />

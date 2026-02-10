@@ -4,7 +4,7 @@ declare module '@env' {
     export const JWT_SECRET: string;
     export const RAZORPAY_KEY_ID: string;
     export const RAZORPAY_KEY_SECRET: string;
-    export const GOOGLE_MAPS_API_KEY: string;
+
     export const GOOGLE_CLIENT_ID: string;
     export const GOOGLE_CLIENT_SECRET: string;
     export const GOOGLE_ANDROID_CLIENT_ID: string;

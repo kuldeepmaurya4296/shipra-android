@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, TextInp
 import { MapPin, Zap, PlaneTakeoff, PlaneLanding, Search, Navigation as NavigationIcon, LocateFixed } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import DummyMap from '../components/DummyMap';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
@@ -33,7 +33,8 @@ export default function HomeScreen({ navigation }: Props) {
         longitudeDelta: 0.2,
     });
 
-    const mapRef = useRef<MapView>(null);
+    // Map Ref removed
+
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
@@ -105,17 +106,7 @@ export default function HomeScreen({ navigation }: Props) {
     };
 
     const handleCheckNearbyBirds = () => {
-        if (birds.length > 0 && mapRef.current) {
-            // Calculate bounding box for all birds
-            const coords = birds.map(b => ({
-                latitude: b.location ? b.location.lat : 23.2599,
-                longitude: b.location ? b.location.lng : 77.4126
-            }));
-
-            mapRef.current.fitToCoordinates(coords, {
-                edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-                animated: true,
-            });
+        if (birds.length > 0) {
             Alert.alert('Nearby Birds', `Found ${birds.length} active birds in your area.`);
         } else {
             Alert.alert('No Birds Found', 'No active birds available nearby.');
@@ -248,50 +239,7 @@ export default function HomeScreen({ navigation }: Props) {
 
                 {/* Map Visualization */}
                 <Animated.View style={[styles.mapCard, { opacity: fadeAnim }]}>
-                    <MapView
-                        ref={mapRef}
-                        provider={PROVIDER_GOOGLE}
-                        style={StyleSheet.absoluteFillObject}
-                        region={region}
-                    >
-                        {/* Render Stations */}
-                        {stations.map((station, index) => (
-                            station.location && (
-                                <Marker
-                                    key={`station-${index}`}
-                                    coordinate={{
-                                        latitude: station.location.lat,
-                                        longitude: station.location.lng
-                                    }}
-                                    title={station.name}
-                                    pinColor="blue"
-                                >
-                                    <View style={styles.markerContainer}>
-                                        <MapPin size={24} color={colors.primary} fill="white" />
-                                    </View>
-                                </Marker>
-                            )
-                        ))}
-
-                        {/* Render Birds */}
-                        {birds.map((bird, index) => (
-                            bird.location && (
-                                <Marker
-                                    key={`bird-${index}`}
-                                    coordinate={{
-                                        latitude: bird.location.lat,
-                                        longitude: bird.location.lng
-                                    }}
-                                    title={bird.name}
-                                    description={`Status: ${bird.status}`}
-                                >
-                                    <View style={styles.birdMarkerContainer}>
-                                        <NavigationIcon size={20} color="#fff" style={{ transform: [{ rotate: '-45deg' }] }} />
-                                    </View>
-                                </Marker>
-                            )
-                        ))}
-                    </MapView>
+                    <DummyMap style={StyleSheet.absoluteFillObject} />
 
                     {/* Map Overlay Controls */}
                     <View style={styles.mapControls}>
