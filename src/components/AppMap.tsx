@@ -31,6 +31,7 @@ interface AppMapProps {
     routeEnd?: Coordinates;
     style?: any;
     interactive?: boolean;
+    onLocationUpdate?: (coords: Coordinates) => void;
 }
 
 const LEAFLET_HTML = `
@@ -203,7 +204,7 @@ const LEAFLET_HTML = `
 </html>
 `;
 
-export default function AppMap({ stations = [], birds = [], showUserLocation = true, routeStart, routeEnd, style }: AppMapProps) {
+export default function AppMap({ stations = [], birds = [], showUserLocation = true, routeStart, routeEnd, style, onLocationUpdate }: AppMapProps) {
     const webViewRef = useRef<WebView>(null);
     const [userLoc, setUserLoc] = useState<Coordinates | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
@@ -277,7 +278,10 @@ export default function AppMap({ stations = [], birds = [], showUserLocation = t
             };
             webViewRef.current.postMessage(JSON.stringify(payload));
         }
-    }, [stations, birds, userLoc, routeStart, routeEnd, isMapReady]);
+        if (userLoc && onLocationUpdate) {
+            onLocationUpdate(userLoc);
+        }
+    }, [stations, birds, userLoc, routeStart, routeEnd, isMapReady, onLocationUpdate]);
 
     return (
         <View style={[styles.container, style]}>

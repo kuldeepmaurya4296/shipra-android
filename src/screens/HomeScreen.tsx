@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, TextInput, Alert, Dimensions, Image } from 'react-native';
-import { MapPin, Zap, PlaneTakeoff, PlaneLanding, Search, Navigation as NavigationIcon, LocateFixed } from 'lucide-react-native';
+import { MapPin, Zap, PlaneTakeoff, PlaneLanding, Search, Navigation as NavigationIcon, LocateFixed, Plane, Ruler, Clock } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
 import AppMap from '../components/AppMap';
-import { getCoordinatesForStation, getBirdLocation } from '../utils/mapUtils';
+import { getCoordinatesForStation, getBirdLocation, getDistanceInKm } from '../utils/mapUtils';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
@@ -25,6 +25,9 @@ export default function HomeScreen({ navigation }: Props) {
     const [filteredToStations, setFilteredToStations] = useState<any[]>([]);
     const [showFromSuggestions, setShowFromSuggestions] = useState(false);
     const [showToSuggestions, setShowToSuggestions] = useState(false);
+    const [userLocation, setUserLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+    const [nearbyBirds, setNearbyBirds] = useState<any[]>([]);
+    const [isSearchingNearby, setIsSearchingNearby] = useState(false);
 
     // Default region (Bhopal)
     const [region, setRegion] = useState({
@@ -63,6 +66,38 @@ export default function HomeScreen({ navigation }: Props) {
         const interval = setInterval(fetchData, 10000); // Update every 10s
         return () => clearInterval(interval);
     }, []);
+
+    // Keep nearby birds synchronized when global birds list updates
+    useEffect(() => {
+        if (nearbyBirds.length > 0) {
+            // Re-filter/re-map to get latest data (like status or updated coordinates)
+            let searchOrigin = userLocation;
+            if (!searchOrigin && fromLocation) {
+                const fromStation = stations.find(s => s.name === fromLocation);
+                if (fromStation) searchOrigin = getCoordinatesForStation(fromStation);
+            }
+
+            if (searchOrigin) {
+                const updatedNearby = birds.map(bird => {
+                    const birdLoc = getBirdLocation(bird);
+                    const dist = getDistanceInKm(
+                        searchOrigin!.latitude,
+                        searchOrigin!.longitude,
+                        birdLoc.latitude,
+                        birdLoc.longitude
+                    );
+                    return {
+                        ...bird,
+                        distanceFromUser: dist,
+                        estimatedTime: Math.ceil((dist / 100) * 60)
+                    };
+                }).filter(bird => bird.distanceFromUser <= 100);
+
+                updatedNearby.sort((a, b) => a.distanceFromUser - b.distanceFromUser);
+                setNearbyBirds(updatedNearby);
+            }
+        }
+    }, [birds]);
 
     const filterStations = (text: string, type: 'from' | 'to') => {
         if (!text) {
@@ -119,10 +154,61 @@ export default function HomeScreen({ navigation }: Props) {
     };
 
     const handleCheckNearbyBirds = () => {
-        if (birds.length > 0) {
-            Alert.alert('Nearby Birds', `Found ${birds.length} active birds in your area.`);
+        let searchOrigin = userLocation;
+
+        // If no GPS, use 'From' station as search origin for better fallback/testing
+        if (!searchOrigin && fromLocation) {
+            const fromStation = stations.find(s => s.name === fromLocation);
+            if (fromStation) {
+                const coords = getCoordinatesForStation(fromStation);
+                if (coords) searchOrigin = coords;
+            }
+        }
+
+        if (!searchOrigin) {
+            Alert.alert(
+                'Location Required',
+                'We couldn\'t detect your GPS location yet. Please select an origin station or wait a moment for GPS.'
+            );
+            return;
+        }
+
+        setIsSearchingNearby(true);
+
+        // Map and filter birds using updated getBirdLocation from mapUtils
+        const filtered = birds.map(bird => {
+            const birdLoc = getBirdLocation(bird);
+            const dist = getDistanceInKm(
+                searchOrigin!.latitude,
+                searchOrigin!.longitude,
+                birdLoc.latitude,
+                birdLoc.longitude
+            );
+
+            return {
+                ...bird,
+                distanceFromUser: dist,
+                estimatedTime: Math.ceil((dist / 100) * 60)
+            };
+        }).filter(bird => bird.distanceFromUser <= 100);
+
+        // Sort by closest first
+        filtered.sort((a, b) => a.distanceFromUser - b.distanceFromUser);
+
+        setNearbyBirds(filtered);
+
+        if (filtered.length > 0) {
+            const originName = userLocation ? "your location" : fromLocation;
+            Alert.alert(
+                'Birds Spotted',
+                `Found ${filtered.length} birds near ${originName}. Closest is ${filtered[0].distanceFromUser.toFixed(1)}km away.`
+            );
         } else {
-            Alert.alert('No Birds Found', 'No active birds available nearby.');
+            const targetArea = userLocation ? "your area" : `near ${fromLocation || "Bhopal"}`;
+            Alert.alert(
+                'No Birds Nearby',
+                `No active birds found within 100km of ${targetArea}. Try selecting a different origin or wait for location sync.`
+            );
         }
     };
 
@@ -298,9 +384,13 @@ export default function HomeScreen({ navigation }: Props) {
                     <AppMap
                         style={StyleSheet.absoluteFillObject}
                         stations={stations.map(s => ({ ...s, ...getCoordinatesForStation(s) }))}
-                        birds={birds.map(b => ({ ...b, currentLocation: getBirdLocation(b) }))}
+                        birds={nearbyBirds.length > 0
+                            ? nearbyBirds.map(b => ({ ...b, currentLocation: getBirdLocation(b) }))
+                            : birds.map(b => ({ ...b, currentLocation: getBirdLocation(b) }))
+                        }
                         routeStart={fromLocation ? stations.find(s => s.name === fromLocation) ? getCoordinatesForStation(stations.find(s => s.name === fromLocation)) : undefined : undefined}
                         routeEnd={toLocation ? stations.find(s => s.name === toLocation) ? getCoordinatesForStation(stations.find(s => s.name === toLocation)) : undefined : undefined}
+                        onLocationUpdate={(coords) => setUserLocation(coords)}
                     />
 
                     {/* Map Overlay Controls */}
@@ -311,6 +401,40 @@ export default function HomeScreen({ navigation }: Props) {
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
+
+                {/* Nearby Birds Console */}
+                {nearbyBirds.length > 0 && (
+                    <Animated.View style={[styles.nearbyConsole, { opacity: fadeAnim }]}>
+                        <View style={styles.consoleHeader}>
+                            <Text style={styles.consoleTitle}>Nearby Birds (100km Radius)</Text>
+                            <TouchableOpacity onPress={() => setNearbyBirds([])}>
+                                <Text style={{ color: colors.mutedForeground }}>Close</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.nearbyList}>
+                            {nearbyBirds.map((bird, index) => (
+                                <View key={bird._id} style={styles.nearbyBirdCard}>
+                                    <View style={styles.nearbyIcon}>
+                                        <Plane size={18} color={index === 0 ? colors.success : colors.primary} />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.nearbyBirdName}>{bird.name}</Text>
+                                        <View style={styles.nearbyStats}>
+                                            <View style={styles.nearByStat}>
+                                                <Ruler size={10} color={colors.primary} />
+                                                <Text style={styles.nearbyStatText}>{bird.distanceFromUser.toFixed(1)} km</Text>
+                                            </View>
+                                            <View style={styles.nearByStat}>
+                                                <Clock size={10} color={colors.primary} />
+                                                <Text style={styles.nearbyStatText}>{bird.estimatedTime} min</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    </Animated.View>
+                )}
 
                 {/* Status Card */}
                 <Animated.View style={[styles.birdCard, { opacity: fadeAnim }]}>
@@ -614,5 +738,69 @@ const styles = StyleSheet.create({
     suggestionText: {
         fontSize: 14,
         color: colors.foreground,
+    },
+    nearbyConsole: {
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: 20,
+        elevation: 3,
+    },
+    consoleHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    consoleTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: colors.foreground,
+    },
+    nearbyList: {
+        flexDirection: 'row',
+    },
+    nearbyBirdCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        padding: 12,
+        marginRight: 12,
+        borderWidth: 1,
+        borderColor: colors.border,
+        width: 180,
+    },
+    nearbyIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    nearbyBirdName: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: colors.foreground,
+    },
+    nearbyStats: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 4,
+    },
+    nearByStat: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    nearbyStatText: {
+        fontSize: 11,
+        color: colors.mutedForeground,
     },
 });

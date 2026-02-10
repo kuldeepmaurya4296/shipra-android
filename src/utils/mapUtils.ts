@@ -31,6 +31,9 @@ export const getCoordinatesForStation = (station: any) => {
 };
 
 export const getBirdLocation = (bird: any) => {
+    if (bird.location && bird.location.lat && bird.location.lng) {
+        return { latitude: bird.location.lat, longitude: bird.location.lng };
+    }
     if (bird.currentLocation && bird.currentLocation.latitude) {
         return bird.currentLocation;
     }
@@ -39,4 +42,20 @@ export const getBirdLocation = (bird: any) => {
         latitude: BHOPAL_COORDS.latitude + (Math.random() - 0.5) * 0.05,
         longitude: BHOPAL_COORDS.longitude + (Math.random() - 0.5) * 0.05
     };
+};
+
+export const getDistanceInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+};
+
+const deg2rad = (deg: number) => {
+    return deg * (Math.PI / 180);
 };
