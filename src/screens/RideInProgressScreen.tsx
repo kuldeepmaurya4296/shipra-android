@@ -4,7 +4,8 @@ import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { Plane, Navigation, Activity, ArrowRight, ShieldAlert, CheckCircle, Lock, Unlock, Droplet, Wrench } from 'lucide-react-native';
-import DummyMap from '../components/DummyMap';
+import AppMap from '../components/AppMap';
+import { getCoordinatesForStation, getBirdLocation } from '../utils/mapUtils';
 import client from '../api/client';
 
 type Props = StackScreenProps<RootStackParamList, 'RideInProgress'>;
@@ -80,93 +81,106 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
                 </Text>
             </View>
 
-            {/* Live Route Visualization */}
-            <View style={styles.routeContainer}>
-                <DummyMap style={StyleSheet.absoluteFillObject} />
-            </View>
-
-            {/* Bird Statistics */}
-            <Text style={styles.sectionLabel}>BIRD STATISTICS</Text>
-            <View style={styles.gridContainer}>
-                <View style={styles.gridItem}>
-                    <Text style={styles.gridLabel}>Status</Text>
-                    <Text style={[styles.gridValue, { color: colors.success }]}>
-                        {bookingDetails?.status?.toUpperCase() || 'ONGOING'}
-                    </Text>
-                </View>
-                <View style={styles.gridItem}>
-                    <Text style={styles.gridLabel}>Speed</Text>
-                    <Text style={styles.gridValue}>95 km/h</Text>
-                </View>
-                <View style={styles.gridItem}>
-                    <Text style={styles.gridLabel}>Distance</Text>
-                    <Text style={styles.gridValue}>6.2 km</Text>
-                </View>
-                <View style={styles.gridItem}>
-                    <Text style={styles.gridLabel}>Altitude</Text>
-                    <Text style={styles.gridValue}>250 m</Text>
-                </View>
-            </View>
-
-            {/* Cabin Controls */}
-            <Text style={styles.sectionLabel}>CABIN CONTROLS</Text>
-            <View style={styles.controlsRow}>
-                {/* AC Control */}
-                <View style={styles.controlCard}>
-                    <Text style={styles.controlTitle}>Cabin Temp</Text>
-                    <View style={styles.tempControl}>
-                        <TouchableOpacity onPress={decreaseTemp} style={styles.tempBtn}>
-                            <Text style={styles.tempBtnText}>-</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.tempValue}>{acTemp}{'\u00B0'}C</Text>
-                        <TouchableOpacity onPress={increaseTemp} style={styles.tempBtn}>
-                            <Text style={styles.tempBtnText}>+</Text>
-                        </TouchableOpacity>
-                    </View>
+            <ScrollView
+                style={styles.scrollArea}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+            >
+                {/* Live Route Visualization */}
+                <View style={styles.routeContainer}>
+                    <AppMap
+                        style={StyleSheet.absoluteFillObject}
+                        routeStart={bookingDetails?.fromLocation ? getCoordinatesForStation({ name: bookingDetails.fromLocation }) : undefined}
+                        routeEnd={bookingDetails?.toLocation ? getCoordinatesForStation({ name: bookingDetails.toLocation }) : undefined}
+                        birds={bookingDetails?.birdId ? [{ ...bookingDetails.birdId, currentLocation: getBirdLocation(bookingDetails.birdId), status: 'active' }] : []}
+                        showUserLocation={true}
+                    />
                 </View>
 
-                {/* Lock Control */}
-                <View style={styles.controlCard}>
-                    <Text style={styles.controlTitle}>Door Lock</Text>
-                    <TouchableOpacity
-                        style={[styles.lockBtn, isLocked ? styles.locked : styles.unlocked]}
-                        onPress={() => setIsLocked(!isLocked)}
-                    >
-                        {isLocked ? (
-                            <Lock size={24} color="#fff" />
-                        ) : (
-                            <Unlock size={24} color={colors.foreground} />
-                        )}
-                        <Text style={[styles.lockText, isLocked && { color: '#fff' }]}>
-                            {isLocked ? 'Locked' : 'Unlocked'}
+                {/* Bird Statistics */}
+                <Text style={styles.sectionLabel}>BIRD STATISTICS</Text>
+                <View style={styles.gridContainer}>
+                    <View style={styles.gridItem}>
+                        <Text style={styles.gridLabel}>Status</Text>
+                        <Text style={[styles.gridValue, { color: colors.success }]}>
+                            {bookingDetails?.status?.toUpperCase() || 'ONGOING'}
                         </Text>
-                    </TouchableOpacity>
+                    </View>
+                    <View style={styles.gridItem}>
+                        <Text style={styles.gridLabel}>Speed</Text>
+                        <Text style={styles.gridValue}>95 km/h</Text>
+                    </View>
+                    <View style={styles.gridItem}>
+                        <Text style={styles.gridLabel}>Distance</Text>
+                        <Text style={styles.gridValue}>6.2 km</Text>
+                    </View>
+                    <View style={styles.gridItem}>
+                        <Text style={styles.gridLabel}>Altitude</Text>
+                        <Text style={styles.gridValue}>250 m</Text>
+                    </View>
                 </View>
-            </View>
 
-            {/* Bird Services */}
-            <Text style={styles.sectionLabel}>BIRD SERVICES</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.serviceList} contentContainerStyle={{ gap: 12, paddingHorizontal: 24 }}>
-                <TouchableOpacity style={styles.serviceItem} onPress={() => navigation.navigate('Diagnosis', { bookingId })}>
-                    <View style={[styles.serviceIcon, { backgroundColor: '#e0f2fe' }]}>
-                        <Activity size={24} color="#0284c7" />
+                {/* Cabin Controls */}
+                <Text style={styles.sectionLabel}>CABIN CONTROLS</Text>
+                <View style={styles.controlsRow}>
+                    {/* AC Control */}
+                    <View style={styles.controlCard}>
+                        <Text style={styles.controlTitle}>Cabin Temp</Text>
+                        <View style={styles.tempControl}>
+                            <TouchableOpacity onPress={decreaseTemp} style={styles.tempBtn}>
+                                <Text style={styles.tempBtnText}>-</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.tempValue}>{acTemp}{'\u00B0'}C</Text>
+                            <TouchableOpacity onPress={increaseTemp} style={styles.tempBtn}>
+                                <Text style={styles.tempBtnText}>+</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                    <Text style={styles.serviceLabel}>Diagnosis</Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity style={styles.serviceItem} onPress={() => navigation.navigate('ServiceOrder', { type: 'maintenance', bookingId })}>
-                    <View style={[styles.serviceIcon, { backgroundColor: '#fef3c7' }]}>
-                        <Wrench size={24} color="#d97706" />
+                    {/* Lock Control */}
+                    <View style={styles.controlCard}>
+                        <Text style={styles.controlTitle}>Door Lock</Text>
+                        <TouchableOpacity
+                            style={[styles.lockBtn, isLocked ? styles.locked : styles.unlocked]}
+                            onPress={() => setIsLocked(!isLocked)}
+                        >
+                            {isLocked ? (
+                                <Lock size={24} color="#fff" />
+                            ) : (
+                                <Unlock size={24} color={colors.foreground} />
+                            )}
+                            <Text style={[styles.lockText, isLocked && { color: '#fff' }]}>
+                                {isLocked ? 'Locked' : 'Unlocked'}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
-                    <Text style={styles.serviceLabel}>Maintenance</Text>
-                </TouchableOpacity>
+                </View>
 
-                <TouchableOpacity style={styles.serviceItem} onPress={() => navigation.navigate('ServiceOrder', { type: 'fuel', bookingId })}>
-                    <View style={[styles.serviceIcon, { backgroundColor: '#dcfce7' }]}>
-                        <Droplet size={24} color="#16a34a" />
-                    </View>
-                    <Text style={styles.serviceLabel}>Hydrogen</Text>
-                </TouchableOpacity>
+                {/* Bird Services */}
+                <Text style={styles.sectionLabel}>BIRD SERVICES</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.serviceList} contentContainerStyle={{ gap: 12, paddingHorizontal: 24 }}>
+                    <TouchableOpacity style={styles.serviceItem} onPress={() => navigation.navigate('Diagnosis', { bookingId })}>
+                        <View style={[styles.serviceIcon, { backgroundColor: '#e0f2fe' }]}>
+                            <Activity size={24} color="#0284c7" />
+                        </View>
+                        <Text style={styles.serviceLabel}>Diagnosis</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.serviceItem} onPress={() => navigation.navigate('ServiceOrder', { type: 'maintenance', bookingId })}>
+                        <View style={[styles.serviceIcon, { backgroundColor: '#fef3c7' }]}>
+                            <Wrench size={24} color="#d97706" />
+                        </View>
+                        <Text style={styles.serviceLabel}>Maintenance</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.serviceItem} onPress={() => navigation.navigate('ServiceOrder', { type: 'fuel', bookingId })}>
+                        <View style={[styles.serviceIcon, { backgroundColor: '#dcfce7' }]}>
+                            <Droplet size={24} color="#16a34a" />
+                        </View>
+                        <Text style={styles.serviceLabel}>Hydrogen</Text>
+                    </TouchableOpacity>
+                </ScrollView>
             </ScrollView>
 
             <View style={styles.actionContainer}>
@@ -187,6 +201,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
+    },
+    scrollArea: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 16,
     },
     header: {
         padding: 24,
@@ -341,9 +361,8 @@ const styles = StyleSheet.create({
         color: colors.foreground
     },
     actionContainer: {
-        marginTop: 20,
         padding: 24,
-        paddingTop: 0,
+        paddingTop: 12,
         gap: 16,
     },
     completeButton: {

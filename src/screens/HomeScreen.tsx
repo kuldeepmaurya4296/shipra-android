@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, TextInp
 import { MapPin, Zap, PlaneTakeoff, PlaneLanding, Search, Navigation as NavigationIcon, LocateFixed } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
-import DummyMap from '../components/DummyMap';
+import AppMap from '../components/AppMap';
+import { getCoordinatesForStation, getBirdLocation } from '../utils/mapUtils';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
@@ -36,16 +37,6 @@ export default function HomeScreen({ navigation }: Props) {
     // Map Ref removed
 
 
-    useEffect(() => {
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-        }).start();
-
-        fetchData();
-    }, []);
-
     const fetchData = async () => {
         try {
             const [stationsRes, birdsRes] = await Promise.all([
@@ -60,6 +51,18 @@ export default function HomeScreen({ navigation }: Props) {
             setLoadingStations(false);
         }
     };
+
+    useEffect(() => {
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+        }).start();
+
+        fetchData();
+        const interval = setInterval(fetchData, 10000); // Update every 10s
+        return () => clearInterval(interval);
+    }, []);
 
     const filterStations = (text: string, type: 'from' | 'to') => {
         if (!text) {
@@ -239,7 +242,13 @@ export default function HomeScreen({ navigation }: Props) {
 
                 {/* Map Visualization */}
                 <Animated.View style={[styles.mapCard, { opacity: fadeAnim }]}>
-                    <DummyMap style={StyleSheet.absoluteFillObject} />
+                    <AppMap
+                        style={StyleSheet.absoluteFillObject}
+                        stations={stations.map(s => ({ ...s, ...getCoordinatesForStation(s) }))}
+                        birds={birds.map(b => ({ ...b, currentLocation: getBirdLocation(b) }))}
+                        routeStart={fromLocation ? stations.find(s => s.name === fromLocation) ? getCoordinatesForStation(stations.find(s => s.name === fromLocation)) : undefined : undefined}
+                        routeEnd={toLocation ? stations.find(s => s.name === toLocation) ? getCoordinatesForStation(stations.find(s => s.name === toLocation)) : undefined : undefined}
+                    />
 
                     {/* Map Overlay Controls */}
                     <View style={styles.mapControls}>

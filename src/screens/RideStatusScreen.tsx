@@ -4,33 +4,40 @@ import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { Plane, Clock, MapPin, Navigation, Info } from 'lucide-react-native';
-import DummyMap from '../components/DummyMap';
+import AppMap from '../components/AppMap';
+import { getBirdLocation } from '../utils/mapUtils';
 import client from '../api/client';
 
 type Props = StackScreenProps<RootStackParamList, 'RideStatus'>;
 
 export default function RideStatusScreen({ navigation, route }: Props) {
     const { bookingId, otp } = route.params;
+    const [booking, setBooking] = useState<any>(null);
     const [statusScale] = useState(new Animated.Value(1));
 
     // Poll for status change (confirmed -> ongoing)
     useEffect(() => {
         let active = true;
-        const interval = setInterval(async () => {
+
+        const fetchStatus = async () => {
             try {
                 // Optimized: Fetch only the current booking
                 const res = await client.get(`/bookings/${bookingId}`);
                 const currentBooking = res.data;
 
-                if (currentBooking && currentBooking.status === 'ongoing') {
-                    if (active) {
+                if (active && currentBooking) {
+                    setBooking(currentBooking);
+                    if (currentBooking.status === 'ongoing') {
                         navigation.replace('RideInProgress', { bookingId });
                     }
                 }
             } catch (e) {
                 console.log('[RideStatus] Polling error:', e);
             }
-        }, 3000); // Check every 3 seconds
+        };
+
+        fetchStatus(); // Initial check
+        const interval = setInterval(fetchStatus, 3000); // Check every 3 seconds
 
         return () => {
             active = false;
@@ -60,12 +67,18 @@ export default function RideStatusScreen({ navigation, route }: Props) {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Your Bird is Arriving</Text>
-                <Text style={styles.headerSubtitle}>Bird #42 assigned</Text>
+                <Text style={styles.headerSubtitle}>{booking?.birdId?.name || 'Bird #42'} assigned</Text>
             </View>
 
             {/* Tracker Map Area */}
             <View style={styles.mapContainer}>
-                <DummyMap style={StyleSheet.absoluteFillObject} />
+                <AppMap
+                    style={StyleSheet.absoluteFillObject}
+                    showUserLocation={true}
+                    birds={booking?.birdId ? [{ ...booking.birdId, currentLocation: getBirdLocation(booking.birdId), status: 'active' }] : []}
+                // If we knew where the bird is coming FROM, we could draw a route. 
+                // For now, just show user and bird.
+                />
                 <Text style={styles.mapLabel}>LIVE TRACKING</Text>
             </View>
 

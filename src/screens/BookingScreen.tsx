@@ -8,7 +8,8 @@ import { RootStackParamList } from '../../App';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Clock, MapPin, Calendar, CreditCard, Ruler, Zap, Plane } from 'lucide-react-native';
 import client from '../api/client';
-import DummyMap from '../components/DummyMap';
+import AppMap from '../components/AppMap';
+import { getBirdLocation, getCoordinatesForStation } from '../utils/mapUtils';
 import { RAZORPAY_KEY_ID } from '@env';
 import RazorpayCheckout from 'react-native-razorpay';
 
@@ -103,17 +104,7 @@ export default function BookingScreen({ route, navigation }: Props) {
                 const calculatedFare = Math.ceil(totalDuration / 15) * 2000;
                 setFare(calculatedFare);
 
-                // Fit map
-                // Fit map moved to DummyMap logic or handled implicitly
-                // setTimeout(() => {
-                //     mapRef.current?.fitToCoordinates([
-                //         { latitude: fromStation.location.lat, longitude: fromStation.location.lng },
-                //         { latitude: toStation.location.lat, longitude: toStation.location.lng }
-                //     ], {
-                //         edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-                //         animated: true
-                //     });
-                // }, 500);
+
             }
 
         } catch (error) {
@@ -249,7 +240,13 @@ export default function BookingScreen({ route, navigation }: Props) {
                 {/* Map Route Visualization */}
                 <View style={styles.mapCard}>
                     {fromCoord && toCoord ? (
-                        <DummyMap style={StyleSheet.absoluteFillObject} />
+                        <AppMap
+                            style={StyleSheet.absoluteFillObject}
+                            routeStart={fromCoord}
+                            routeEnd={toCoord}
+                            birds={selectedBird ? [{ ...selectedBird, currentLocation: getBirdLocation(selectedBird) }] : birds.map(b => ({ ...b, currentLocation: getBirdLocation(b) }))}
+                            stations={stations.map(s => getCoordinatesForStation(s) && { ...s, ...getCoordinatesForStation(s) })}
+                        />
                     ) : (
                         <View style={styles.mapLoading}>
                             <ActivityIndicator size="large" color={colors.primary} />
