@@ -21,6 +21,8 @@ interface Bird {
     name?: string;
     currentLocation?: Coordinates;
     status: 'active' | 'maintenance' | 'charging';
+    distance?: string;
+    eta?: string;
 }
 
 interface AppMapProps {
@@ -29,6 +31,7 @@ interface AppMapProps {
     showUserLocation?: boolean;
     routeStart?: Coordinates;
     routeEnd?: Coordinates;
+    waypoints?: Coordinates[];
     style?: any;
     interactive?: boolean;
     onLocationUpdate?: (coords: Coordinates) => void;
@@ -66,6 +69,7 @@ const LEAFLET_HTML = `
         var markers = {
             stations: [],
             birds: [],
+            waypoints: [],
             user: null,
             routeStart: null,
             routeEnd: null
@@ -108,6 +112,13 @@ const LEAFLET_HTML = `
             iconAnchor: [10, 10]
         });
 
+        var waypointIcon = L.divIcon({
+            className: 'custom-icon',
+            html: '<div style="background-color: #8b5cf6; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 8px;"></div>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+        });
+
         // Handle updates from RN
         window.updateMap = function(data) {
             try {
@@ -121,6 +132,8 @@ const LEAFLET_HTML = `
                 
                 if (markers.user) map.removeLayer(markers.user);
                 if (markers.routeStart) map.removeLayer(markers.routeStart);
+                markers.waypoints.forEach(m => map.removeLayer(m));
+                markers.waypoints = [];
                 if (markers.routeEnd) map.removeLayer(markers.routeEnd);
                 if (routePolyline) map.removeLayer(routePolyline);
 
@@ -146,7 +159,12 @@ const LEAFLET_HTML = `
                     payload.birds.forEach(bird => {
                         if (bird.currentLocation) {
                             var m = L.marker([bird.currentLocation.latitude, bird.currentLocation.longitude], {icon: birdIcon})
-                                .bindPopup("<b>" + (bird.name || 'Bird') + "</b><br>Status: " + bird.status)
+                                .bindPopup(
+                                    "<div style='text-align:center'><b>" + (bird.name || 'Bird') + "</b>" +
+                                    (bird.distance ? "<br><span style='color:#4f46e5;font-weight:bold'>" + bird.distance + "</span>" : "") +
+                                    (bird.eta ? "<br><span style='color:#10b981'>" + bird.eta + " away</span>" : "") +
+                                    "</div>"
+                                )
                                 .addTo(map);
                             markers.birds.push(m);
                         }
@@ -160,13 +178,25 @@ const LEAFLET_HTML = `
                     markers.routeStart = L.marker(start, {icon: startIcon, zIndexOffset: 2000}).addTo(map);
                     latlngs.push(start);
                 }
+
+                if (payload.waypoints && Array.isArray(payload.waypoints)) {
+                    payload.waypoints.forEach(function(wp) {
+                        if (wp && wp.latitude) {
+                            var pt = [wp.latitude, wp.longitude];
+                            var m = L.marker(pt, {icon: waypointIcon}).addTo(map);
+                            markers.waypoints.push(m);
+                            latlngs.push(pt);
+                        }
+                    });
+                }
+
                 if (payload.routeEnd) {
                     var end = [payload.routeEnd.latitude, payload.routeEnd.longitude];
                     markers.routeEnd = L.marker(end, {icon: endIcon, zIndexOffset: 2000}).addTo(map);
                     latlngs.push(end);
                 }
 
-                if (latlngs.length === 2) {
+                if (latlngs.length >= 2) {
                     // Create more "aviation" style line (curved or dashed)
                     // For now, nice thick indigo line with a glow effect
                     routePolyline = L.polyline(latlngs, {
@@ -204,13 +234,14 @@ const LEAFLET_HTML = `
 </html>
 `;
 
-export default function AppMap({ stations = [], birds = [], showUserLocation = true, routeStart, routeEnd, style, onLocationUpdate }: AppMapProps) {
+export default function AppMap({ stations = [], birds = [], showUserLocation = true, routeStart, routeEnd, waypoints = [], style, onLocationUpdate }: AppMapProps) {
     const webViewRef = useRef<WebView>(null);
     const [userLoc, setUserLoc] = useState<Coordinates | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
 
     useEffect(() => {
         const requestLocationPermission = async () => {
+            await new Promise(resolve => setTimeout(() => resolve(true), 1000));
             if (Platform.OS === 'android') {
                 try {
                     const granted = await PermissionsAndroid.request(
@@ -274,7 +305,8 @@ export default function AppMap({ stations = [], birds = [], showUserLocation = t
                 birds,
                 userLocation: userLoc,
                 routeStart,
-                routeEnd
+                routeEnd,
+                waypoints
             };
             webViewRef.current.postMessage(JSON.stringify(payload));
         }

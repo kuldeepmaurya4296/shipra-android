@@ -49,7 +49,7 @@ const sendWhatsApp = async (to, body) => {
             formattedTo = '91' + formattedTo;
         }
 
-        const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+        const url = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
 
         await axios.post(url, {
             messaging_product: 'whatsapp',
@@ -71,6 +71,9 @@ const sendWhatsApp = async (to, body) => {
         if (error.response?.data) {
             console.error('[WHATSAPP] Details:', JSON.stringify(error.response.data));
         }
+
+        // RE-THROW to allow caller to handle error
+        throw error;
     }
 };
 

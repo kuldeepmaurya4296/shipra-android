@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Pilot = require('../models/Pilot');
 const axios = require('axios');
+const { sendWhatsApp } = require('../services/notificationService');
 
 // Environment Check
 const requiredEnv = ['JWT_SECRET', 'META_PHONE_NUMBER_ID', 'META_ACCESS_TOKEN'];
@@ -125,11 +126,55 @@ router.post('/pilot-login', async (req, res) => {
 // In-memory OTP store (for demo purposes)
 const otpStore = {};
 
+// WhatsApp Status Check
+router.get('/whatsapp-status', async (req, res) => {
+    const phoneNumberId = process.env.META_PHONE_NUMBER_ID?.replace(/"/g, '');
+    const accessToken = process.env.META_ACCESS_TOKEN;
+
+    if (!phoneNumberId || !accessToken) {
+        return res.status(500).json({
+            status: 'error',
+            message: 'Missing environment variables',
+            details: {
+                hasPhoneNumberId: !!phoneNumberId,
+                hasAccessToken: !!accessToken
+            }
+        });
+    }
+
+    try {
+        const url = `https://graph.facebook.com/v19.0/${phoneNumberId}`;
+        const response = await axios.get(url, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+
+        res.json({
+            status: 'ok',
+            message: 'WhatsApp API is reachable and configured.',
+            metaData: {
+                id: response.data.id,
+                verified_name: response.data.verified_name,
+                quality_rating: response.data.quality_rating,
+                code_verification_status: response.data.code_verification_status
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to connect to WhatsApp API',
+            error: error.response?.data || error.message
+        });
+    }
+});
+
 // OTP Request (WhatsApp Integration)
 router.post('/otp-request', async (req, res) => {
     try {
         const { phone } = req.body;
         if (!phone) return res.status(400).json({ message: 'Phone number is required' });
+
+        // Ensure phone is string
+        const phoneStr = String(phone);
 
         // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -142,33 +187,28 @@ router.post('/otp-request', async (req, res) => {
 
         // Format phone number
         // 1. Remove non-digits
-        let formattedPhone = phone.replace(/\D/g, '');
-        // 2. Add default country code (91 for India) if missing (assuming 10 digits = local number)
+        let formattedPhone = phoneStr.replace(/\D/g, '');
+
+        // 2. Add default country code (91 for India) if missing
+        // If length is 10, prepend 91.
+        // If length > 10, assume it might already have country code. 
+        // NOTE: This is a basic check.
         if (formattedPhone.length === 10) {
             formattedPhone = '91' + formattedPhone;
+        } else if (formattedPhone.length > 10 && !formattedPhone.startsWith('91')) {
+            // Edge case: if user typed 098..., strip leading 0 and add 91
+            if (formattedPhone.startsWith('0')) {
+                formattedPhone = '91' + formattedPhone.substring(1);
+            }
         }
+
 
         console.log(`Sending OTP ${otp} to ${formattedPhone}`);
 
-        // Send via WhatsApp API
-        const url = `https://graph.facebook.com/v18.0/${process.env.META_PHONE_NUMBER_ID}/messages`;
-
+        // Send via WhatsApp API using shared service
+        const message = `Your Shipra App verification code is: ${otp}`;
         try {
-            await axios.post(url, {
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                to: formattedPhone,
-                type: "text",
-                text: {
-                    preview_url: false,
-                    body: `Your Shipra App verification code is: ${otp}`
-                }
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${process.env.META_ACCESS_TOKEN}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            await sendWhatsApp(formattedPhone, message);
             console.log(`OTP sent successfully to ${formattedPhone}`);
             res.json({ message: 'OTP sent successfully to WhatsApp', success: true });
 

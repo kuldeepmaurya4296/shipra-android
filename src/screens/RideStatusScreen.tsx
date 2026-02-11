@@ -11,8 +11,8 @@ import client from '../api/client';
 type Props = StackScreenProps<RootStackParamList, 'RideStatus'>;
 
 export default function RideStatusScreen({ navigation, route }: Props) {
-    const { bookingId, otp } = route.params;
-    const [booking, setBooking] = useState<any>(null);
+    const { bookingId, otp, initialData } = route.params;
+    const [booking, setBooking] = useState<any>(initialData || null);
     const [statusScale] = useState(new Animated.Value(1));
 
     // Poll for status change (confirmed -> ongoing)
@@ -75,9 +75,9 @@ export default function RideStatusScreen({ navigation, route }: Props) {
                 <AppMap
                     style={StyleSheet.absoluteFillObject}
                     showUserLocation={true}
+                    routeStart={booking?.birdId ? getBirdLocation(booking.birdId) : undefined}
+                    routeEnd={booking?.fromCoords || undefined}
                     birds={booking?.birdId ? [{ ...booking.birdId, currentLocation: getBirdLocation(booking.birdId), status: 'active' }] : []}
-                // If we knew where the bird is coming FROM, we could draw a route. 
-                // For now, just show user and bird.
                 />
                 <Text style={styles.mapLabel}>LIVE TRACKING</Text>
             </View>

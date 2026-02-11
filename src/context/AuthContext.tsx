@@ -26,7 +26,7 @@ interface AuthContextType {
     socialLogin: (email: string, name: string, provider: 'google' | 'whatsapp') => Promise<void>;
     requestOtp: (phone: string) => Promise<void>;
     loginWithOtp: (phone: string, otp: string) => Promise<void>;
-    pilotLogin: (email: string) => Promise<void>;
+    pilotLogin: (email: string, password?: string) => Promise<void>;
     updateProfile: (data: Partial<User>) => Promise<void>;
     refreshUserProfile: () => Promise<void>;
     logout: () => Promise<void>;
@@ -135,10 +135,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const pilotLogin = async (email: string) => {
+    const pilotLogin = async (email: string, password?: string) => {
         try {
-            // Use password '123456' as per requirement (or passed as argument, but here simpler)
-            const response = await client.post('/auth/pilot-login', { email, password: '123456' });
+            const response = await client.post('/auth/pilot-login', {
+                email,
+                password: password || '123456' // Fallback for legacy calls if any
+            });
             const { token: authToken, user: userData } = response.data;
             await AsyncStorage.setItem('auth_token', authToken);
             await AsyncStorage.setItem('user', JSON.stringify(userData));

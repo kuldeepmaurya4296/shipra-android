@@ -30,8 +30,17 @@ export type RootStackParamList = {
   Home: undefined;
   History: undefined;
   Profile: undefined;
-  Booking: { from: string; to: string };
-  RideStatus: { bookingId: string; otp?: string };
+  Booking: {
+    from: string;
+    to: string;
+    fromCoords?: { latitude: number; longitude: number };
+    toCoords?: { latitude: number; longitude: number };
+    bookForOther?: boolean;
+    passengerName?: string;
+    passengerPhone?: string;
+    stops?: { address: string; coords: { latitude: number; longitude: number } }[];
+  };
+  RideStatus: { bookingId: string; otp?: string; initialData?: any };
   RideInProgress: { bookingId: string };
   RideSummary: { bookingId: string };
   SOS: { bookingId: string };

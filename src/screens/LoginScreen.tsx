@@ -53,20 +53,16 @@ export default function LoginScreen({ navigation, route }: Props) {
         }
 
         if (userType === 'pilot') {
-            if (email === 'k6263638053@gmail.com' && password === '123456') {
-                setLoading(true);
-                try {
-                    await pilotLogin(email);
-                } catch (e) {
-                    Alert.alert('Error', 'Pilot Login Failed');
-                } finally {
-                    setLoading(false);
-                }
-                return;
-            } else {
-                Alert.alert('Error', 'Invalid Pilot Credentials');
-                return;
+            setLoading(true);
+            try {
+                await pilotLogin(email, password);
+            } catch (e: any) {
+                const msg = e.response?.data?.message || 'Pilot Login Failed';
+                Alert.alert('Error', msg);
+            } finally {
+                setLoading(false);
             }
+            return;
         }
 
         setLoading(true);

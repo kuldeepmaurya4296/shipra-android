@@ -91,8 +91,8 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
                 <View style={styles.routeContainer}>
                     <AppMap
                         style={StyleSheet.absoluteFillObject}
-                        routeStart={bookingDetails?.fromLocation ? getCoordinatesForStation({ name: bookingDetails.fromLocation }) : undefined}
-                        routeEnd={bookingDetails?.toLocation ? getCoordinatesForStation({ name: bookingDetails.toLocation }) : undefined}
+                        routeStart={bookingDetails?.fromCoords || (bookingDetails?.fromLocation ? getCoordinatesForStation({ name: bookingDetails.fromLocation }) : undefined)}
+                        routeEnd={bookingDetails?.toCoords || (bookingDetails?.toLocation ? getCoordinatesForStation({ name: bookingDetails.toLocation }) : undefined)}
                         birds={bookingDetails?.birdId ? [{ ...bookingDetails.birdId, currentLocation: getBirdLocation(bookingDetails.birdId), status: 'active' }] : []}
                         showUserLocation={true}
                     />
