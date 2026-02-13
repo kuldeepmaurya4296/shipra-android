@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, PermissionsAndroid, Platform } from 'react-native';
+import { View, ActivityIndicator, PermissionsAndroid, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Geolocation from 'react-native-geolocation-service';
+import { styles } from './AppMap.styles';
 
 interface Coordinates {
     latitude: number;
@@ -338,16 +339,3 @@ export default function AppMap({ stations = [], birds = [], showUserLocation = t
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        overflow: 'hidden',
-        backgroundColor: '#f3f4f6',
-    },
-    loadingOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: '#f3f4f6',
-        alignItems: 'center',
-        justifyContent: 'center',
-    }
-});

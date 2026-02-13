@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, SafeAreaView, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { Plane, Clock, MapPin, Navigation, Info } from 'lucide-react-native';
+import { Clock, MapPin, Navigation } from 'lucide-react-native';
 import AppMap from '../components/AppMap';
 import { getBirdLocation } from '../utils/mapUtils';
 import client from '../api/client';
+import { styles } from './RideStatusScreen.styles';
 
 type Props = StackScreenProps<RootStackParamList, 'RideStatus'>;
 
@@ -102,7 +103,7 @@ export default function RideStatusScreen({ navigation, route }: Props) {
 
             <View style={styles.statusRow}>
                 <Text style={styles.statusLabel}>Status</Text>
-                <View style={[styles.statusBadge, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                <View style={styles.statusBadge}>
                     <Animated.View style={[styles.statusDot, { transform: [{ scale: statusScale }] }]} />
                     <Text style={styles.statusText}>Live • On Time</Text>
                 </View>
@@ -135,216 +136,4 @@ export default function RideStatusScreen({ navigation, route }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    header: {
-        padding: 24,
-        paddingTop: 48,
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: colors.foreground,
-        marginBottom: 8,
-    },
-    headerSubtitle: {
-        fontSize: 16,
-        color: colors.mutedForeground,
-    },
-    mapContainer: {
-        height: 250,
-        margin: 24,
-        borderRadius: 24,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    mapBackground: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    trackerPath: {
-        width: '70%',
-        height: 100,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    pathLine: {
-        position: 'absolute',
-        width: '100%',
-        height: 2,
-        backgroundColor: colors.primary,
-        opacity: 0.3,
-        borderStyle: 'dashed', // Note: style needs borderRadius not borderStyle for Views, creating mock dashed line
-    },
-    trackerIconContainer: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#fff',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    destinationDot: {
-        position: 'absolute',
-        right: 0,
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        backgroundColor: colors.success,
-        borderWidth: 2,
-        borderColor: '#fff',
-    },
-    mapLabel: {
-        position: 'absolute',
-        bottom: 16,
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: colors.primary,
-        letterSpacing: 1,
-        backgroundColor: '#fff',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        overflow: 'hidden',
-    },
-    statsContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: 24,
-        gap: 16,
-        marginBottom: 24,
-    },
-    statCard: {
-        flex: 1,
-        backgroundColor: '#fff',
-        padding: 16,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: colors.border,
-        elevation: 2,
-    },
-    statLabel: {
-        fontSize: 12,
-        color: colors.mutedForeground,
-        marginBottom: 8,
-    },
-    statValueRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    statValue: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: colors.foreground,
-    },
-    statusRow: {
-        paddingHorizontal: 24,
-        marginBottom: 40,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#fff',
-        marginHorizontal: 24,
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    statusLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: colors.foreground,
-    },
-    statusBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 8,
-    },
-    statusDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: colors.success,
-    },
-    statusText: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: colors.success,
-    },
-    actionContainer: {
-        padding: 24,
-        marginTop: 'auto',
-        gap: 16,
-    },
-    primaryButton: {
-        backgroundColor: colors.primary,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 18,
-        borderRadius: 20,
-        gap: 12,
-        elevation: 4,
-    },
-    primaryButtonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    secondaryButton: {
-        alignItems: 'center',
-        paddingVertical: 12,
-    },
-    secondaryButtonText: {
-        color: colors.mutedForeground,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    otpContainer: {
-        position: 'absolute',
-        bottom: 120, // Above the buttons
-        left: 24,
-        backgroundColor: colors.foreground,
-        padding: 16,
-        borderRadius: 16,
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        alignItems: 'center',
-    },
-    otpLabel: {
-        color: 'rgba(255,255,255,0.6)',
-        fontSize: 10,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-        marginBottom: 4,
-    },
-    otpValue: {
-        color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold',
-        letterSpacing: 2,
-    },
-    otpHint: {
-        color: colors.success,
-        fontSize: 10,
-        marginTop: 4,
-        fontWeight: '500',
-    },
-});
+// Styles have been moved to RideStatusScreen.styles.ts

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, SafeAreaView, TouchableOpacity, ScrollView, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { colors } from '../theme/colors';
 import NavigationBar from '../components/NavigationBar';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { User, LogOut, ChevronRight, Settings, Edit2, Check, X } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
+import { styles } from './ProfileScreen.styles';
 
 type Props = StackScreenProps<RootStackParamList, 'Profile'>;
 
@@ -143,11 +144,31 @@ export default function ProfileScreen({ navigation }: Props) {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* ... header ... */}
+            {/* Header */}
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Profile</Text>
+                <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => setIsEditing(!isEditing)}
+                    disabled={updating}
+                >
+                    {isEditing ? (
+                        <X size={20} color={colors.foreground} />
+                    ) : (
+                        <Edit2 size={20} color={colors.foreground} />
+                    )}
+                </TouchableOpacity>
+            </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* ... warning banner ... */}
-                {/* ... avatar ... */}
+                {/* Avatar Section */}
+                <View style={styles.profileHeader}>
+                    <View style={styles.avatarContainer}>
+                        <User size={40} color={colors.primary} />
+                    </View>
+                    <Text style={styles.userNameHeader}>{user?.name || 'User'}</Text>
+                    <Text style={styles.userEmailHeader}>{user?.email || 'email@example.com'}</Text>
+                </View>
 
                 {/* Form Section */}
                 <View style={styles.formContainer}>
@@ -265,196 +286,3 @@ export default function ProfileScreen({ navigation }: Props) {
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingTop: 50,
-        paddingBottom: 10,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: colors.foreground,
-    },
-    editButton: {
-        padding: 8,
-        backgroundColor: '#f3f4f6',
-        borderRadius: 8,
-    },
-    content: {
-        padding: 24,
-    },
-    profileHeader: {
-        alignItems: 'center',
-        marginBottom: 32,
-    },
-    avatarContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: 'rgba(79, 70, 229, 0.1)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 12,
-        borderWidth: 2,
-        borderColor: colors.primary,
-    },
-    userNameHeader: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: colors.foreground,
-    },
-    userEmailHeader: {
-        fontSize: 14,
-        color: colors.mutedForeground,
-    },
-    formContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    sectionTitle: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: colors.primary,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        marginBottom: 16,
-        marginTop: 8,
-    },
-    inputGroup: {
-        marginBottom: 16,
-    },
-    label: {
-        fontSize: 14,
-        color: colors.mutedForeground,
-        marginBottom: 6,
-        fontWeight: '500',
-    },
-    input: {
-        backgroundColor: '#f9fafb',
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 12,
-        padding: 12,
-        fontSize: 16,
-        color: colors.foreground,
-    },
-    valueText: {
-        fontSize: 16,
-        color: colors.foreground,
-        fontWeight: '500',
-        paddingVertical: 8,
-    },
-    textArea: {
-        minHeight: 80,
-        textAlignVertical: 'top',
-    },
-    disabledInput: {
-        backgroundColor: '#e5e7eb',
-        color: '#9ca3af',
-    },
-    divider: {
-        height: 1,
-        backgroundColor: colors.border,
-        marginVertical: 20,
-    },
-    checkboxRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-        gap: 8,
-    },
-    checkbox: {
-        width: 20,
-        height: 20,
-        borderRadius: 4,
-        borderWidth: 2,
-        borderColor: colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    checkboxChecked: {
-        backgroundColor: colors.primary,
-    },
-    checkboxLabel: {
-        fontSize: 14,
-        color: colors.foreground,
-    },
-    actionButtons: {
-        flexDirection: 'row',
-        gap: 12,
-        marginTop: 24,
-    },
-    button: {
-        flex: 1,
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    cancelButton: {
-        backgroundColor: '#f3f4f6',
-    },
-    cancelButtonText: {
-        color: colors.foreground,
-        fontWeight: 'bold',
-    },
-    saveButton: {
-        backgroundColor: colors.primary,
-    },
-    saveButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-    },
-    logoutButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16,
-        backgroundColor: '#fef2f2',
-        borderRadius: 12,
-        marginTop: 24,
-        gap: 8,
-        borderWidth: 1,
-        borderColor: '#fee2e2',
-    },
-    logoutText: {
-        color: '#ef4444',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    warningBanner: {
-        backgroundColor: '#fef3c7',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: '#fcd34d',
-    },
-    warningText: {
-        color: '#92400e',
-        fontSize: 14,
-        fontWeight: '600',
-        textAlign: 'center',
-    },
-    warningSubtext: {
-        color: '#b45309',
-        fontSize: 12,
-        textAlign: 'center',
-        marginTop: 4,
-    },
-});

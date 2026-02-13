@@ -16,21 +16,50 @@ export interface GeocodedAddress {
 /**
  * Reverse geocode coordinates to a human-readable address.
  */
+const cache: { [key: string]: GeocodedAddress } = {};
+
+/**
+ * Reverse geocode coordinates to a human-readable address.
+ */
 export const reverseGeocode = async (
     latitude: number,
     longitude: number
 ): Promise<GeocodedAddress | null> => {
+    // Round coordinates to 4 decimal places (~11m precision) to increase cache hits
+    const lat = Number(latitude.toFixed(4));
+    const lon = Number(longitude.toFixed(4));
+    const cacheKey = `${lat},${lon}`;
+
+    if (cache[cacheKey]) {
+        console.log('[ReverseGeocode] Returning cached result for:', cacheKey);
+        return cache[cacheKey];
+    }
+
     try {
         const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
             {
                 headers: {
-                    'User-Agent': 'ShipraFlyApp/1.0',
+                    'User-Agent': 'ShipraFlyApp/1.0 (kuldeepmaurya4296@gmail.com)', // Specific User-Agent required by Nominatim
                     'Accept-Language': 'en',
                 },
             }
         );
-        const data = await response.json();
+
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error('[ReverseGeocode] HTTP Error:', response.status, errText);
+            return null;
+        }
+
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error('[ReverseGeocode] JSON Parse Error. Response:', text);
+            return null;
+        }
 
         if (data && data.display_name) {
             const address = data.address || {};
@@ -51,7 +80,7 @@ export const reverseGeocode = async (
                 ? parts.join(', ')
                 : data.display_name;
 
-            return {
+            const result = {
                 displayName: data.display_name,
                 shortName: formattedAddress, // Now holds the exact/precise address
                 latitude,
@@ -60,6 +89,14 @@ export const reverseGeocode = async (
                 state: address.state,
                 country: address.country,
             };
+
+            // Store in cache
+            const lat = Number(latitude.toFixed(4));
+            const lon = Number(longitude.toFixed(4));
+            const cacheKey = `${lat},${lon}`;
+            cache[cacheKey] = result;
+
+            return result;
         }
         return null;
     } catch (error) {
@@ -87,7 +124,20 @@ export const searchPlaces = async (
                 },
             }
         );
-        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('[SearchPlaces] HTTP Error:', response.status);
+            return [];
+        }
+
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error('[SearchPlaces] JSON Parse Error. Response:', text);
+            return [];
+        }
 
         if (Array.isArray(data)) {
             return data.map((item: any) => {

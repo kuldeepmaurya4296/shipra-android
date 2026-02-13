@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Alert, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
 import { colors } from '../theme/colors';
 import LinearGradient from 'react-native-linear-gradient';
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import client from '../api/client';
+import { styles } from './PilotHomeScreen.styles';
 
 export default function PilotHomeScreen() {
     const navigation = useNavigation();
@@ -23,27 +22,26 @@ export default function PilotHomeScreen() {
             // Call Backend API to verify
             const response = await client.post('/bookings/verify-otp', { otp });
             const booking = response.data;
+            const tripData = {
+                ...booking,
+                // Map backend user fields to tripData fields
+                userName: booking.userId?.name || 'Guest User',
+                userEmail: booking.userId?.email,
+                userPhone: booking.userId?.phone,
+
+                // Map specific detailed fields for pilot view
+                whatsappNumber: booking.whatsappNumber || booking.userId?.whatsappNumber || '-',
+                callingNumber: booking.callingNumber || booking.userId?.callingNumber || '-',
+                aadharNumber: booking.aadharNumber || booking.userId?.aadharNumber || '-',
+                panNumber: booking.panNumber || booking.userId?.panNumber || '-',
+                currentAddress: booking.currentAddress || booking.userId?.currentAddress || '-',
+                permanentAddress: booking.permanentAddress || booking.userId?.permanentAddress || '-',
+                otherDetails: booking.otherDetails || booking.userId?.otherDetails || '-'
+            };
 
             if (booking) {
                 Alert.alert('Success', 'Ride Verified!');
                 setOtp('');
-
-                // Map backend data to screen params
-                // Prioritize booking snapshot fields, fall back to user profile fields
-                const tripData = {
-                    ...booking,
-                    userName: booking.userId?.name || 'Guest User',
-                    userEmail: booking.userId?.email,
-                    userPhone: booking.userId?.phone,
-
-                    whatsappNumber: booking.whatsappNumber || booking.userId?.whatsappNumber || '-',
-                    callingNumber: booking.callingNumber || booking.userId?.callingNumber || '-',
-                    aadharNumber: booking.aadharNumber || booking.userId?.aadharNumber || '-',
-                    panNumber: booking.panNumber || booking.userId?.panNumber || '-',
-                    currentAddress: booking.currentAddress || booking.userId?.currentAddress || '-',
-                    permanentAddress: booking.permanentAddress || booking.userId?.permanentAddress || '-',
-                    otherDetails: booking.otherDetails || booking.userId?.otherDetails || '-'
-                };
 
                 // @ts-ignore
                 navigation.navigate('PilotRideDetails', { tripData });
@@ -104,64 +102,3 @@ export default function PilotHomeScreen() {
         </LinearGradient>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    content: {
-        flex: 1,
-        padding: 24,
-        justifyContent: 'center',
-    },
-    header: {
-        marginBottom: 40,
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: colors.foreground,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: colors.mutedForeground,
-    },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        padding: 32,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 5,
-    },
-    input: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: colors.foreground,
-        borderBottomWidth: 2,
-        borderBottomColor: colors.primary,
-        marginBottom: 32,
-        paddingBottom: 8,
-        letterSpacing: 8,
-    },
-    button: {
-        backgroundColor: colors.primary,
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-});
