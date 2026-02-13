@@ -35,9 +35,7 @@ export type RootStackParamList = {
     to: string;
     fromCoords?: { latitude: number; longitude: number };
     toCoords?: { latitude: number; longitude: number };
-    bookForOther?: boolean;
-    passengerName?: string;
-    passengerPhone?: string;
+
     stops?: { address: string; coords: { latitude: number; longitude: number } }[];
   };
   RideStatus: { bookingId: string; otp?: string; initialData?: any };

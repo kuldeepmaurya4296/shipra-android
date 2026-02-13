@@ -25,7 +25,7 @@ type Props = StackScreenProps<RootStackParamList, 'Booking'>;
 type BookingState = 'idle' | 'processing_payment' | 'processing_booking' | 'success' | 'failed_booking';
 
 export default function BookingScreen({ route, navigation }: Props) {
-    const { from, to, fromCoords, toCoords, stops, bookForOther, passengerName, passengerPhone } = route.params;
+    const { from, to, fromCoords, toCoords, stops } = route.params;
     const { user } = useAuth();
 
     // UI State
@@ -217,7 +217,7 @@ export default function BookingScreen({ route, navigation }: Props) {
         // Prepare payload once
         const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
         const userPhone = (user?.whatsappNumber || user?.phone || '').replace(/\D/g, '');
-        const passPhone = bookForOther && passengerPhone ? passengerPhone.replace(/\D/g, '') : undefined;
+
 
         const payload = {
             birdNumber: `${assignedBird.model || 'Bird'}-${Math.floor(100 + Math.random() * 900)}`,
@@ -236,11 +236,7 @@ export default function BookingScreen({ route, navigation }: Props) {
             phone: userPhone,
             whatsappNumber: userPhone,
             email: user?.email,
-            ...(bookForOther ? {
-                bookForOther: true,
-                passengerName: passengerName,
-                passengerPhone: passPhone
-            } : {})
+
         };
 
         const tryCreate = async () => {
@@ -439,15 +435,7 @@ export default function BookingScreen({ route, navigation }: Props) {
                 )}
 
                 {/* ─── Passenger ─── */}
-                {bookForOther && passengerName && (
-                    <View style={styles.passengerCard}>
-                        <User size={20} color={colors.primary} />
-                        <View>
-                            <Text style={styles.passengerLabel}>Passenger</Text>
-                            <Text style={styles.passengerText}>{passengerName} ({passengerPhone})</Text>
-                        </View>
-                    </View>
-                )}
+
 
                 {/* ─── Pricing ─── */}
                 <View style={styles.priceCard}>
@@ -534,9 +522,7 @@ const styles = StyleSheet.create({
     birdStatus: { fontSize: 12, color: '#047857' },
 
     // Passenger
-    passengerCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#eff6ff', padding: 12, borderRadius: 12, marginBottom: 16, gap: 12, borderWidth: 1, borderColor: '#dbeafe' },
-    passengerLabel: { fontSize: 10, color: '#1e40af', fontWeight: 'bold' },
-    passengerText: { fontSize: 14, color: '#1e3a8a', fontWeight: '500' },
+
 
     // Pricing
     priceCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: colors.border, marginBottom: 20 },

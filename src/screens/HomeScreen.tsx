@@ -66,9 +66,7 @@ export default function HomeScreen({ navigation }: Props) {
     const [loadingBirds, setLoadingBirds] = useState(true);
 
     // ─── Book for Someone Else ───
-    const [bookForOther, setBookForOther] = useState(false);
-    const [passengerName, setPassengerName] = useState('');
-    const [passengerPhone, setPassengerPhone] = useState('');
+
 
     // ─── Search debounce ───
     const pickupSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -544,10 +542,7 @@ export default function HomeScreen({ navigation }: Props) {
             Alert.alert('Invalid Route', 'Pickup and drop locations are too close or the same.');
             return;
         }
-        if (bookForOther && (!passengerName.trim() || !passengerPhone.trim())) {
-            Alert.alert('Passenger Details Required', 'Please provide the passenger name and contact number.');
-            return;
-        }
+
 
         navigation.navigate('Booking', {
             from: pickupAddress,
@@ -555,9 +550,7 @@ export default function HomeScreen({ navigation }: Props) {
             fromCoords: pickupCoords,
             toCoords: dropCoords,
             stops: stops.filter(s => s.coords !== null).map(s => ({ address: s.address, coords: s.coords! })),
-            bookForOther: bookForOther,
-            passengerName: bookForOther ? passengerName.trim() : undefined,
-            passengerPhone: bookForOther ? passengerPhone.trim() : undefined,
+
         });
     };
 
@@ -907,49 +900,7 @@ export default function HomeScreen({ navigation }: Props) {
                 )}
 
                 {/* ─── Book for Someone Else ─── */}
-                <Animated.View style={[styles.forOtherCard, { opacity: fadeAnim }]}>
-                    <View style={styles.forOtherHeader}>
-                        <View style={styles.forOtherLeft}>
-                            <Users size={18} color={colors.primary} />
-                            <Text style={styles.forOtherTitle}>Book for someone else</Text>
-                        </View>
-                        <Switch
-                            value={bookForOther}
-                            onValueChange={setBookForOther}
-                            trackColor={{ false: '#e5e7eb', true: 'rgba(79, 70, 229, 0.3)' }}
-                            thumbColor={bookForOther ? colors.primary : '#f3f4f6'}
-                        />
-                    </View>
 
-                    {bookForOther && (
-                        <View style={styles.passengerFields}>
-                            <View style={styles.passengerInputWrapper}>
-                                <User size={16} color={colors.mutedForeground} />
-                                <TextInput
-                                    style={styles.passengerInput}
-                                    placeholder="Passenger Name"
-                                    value={passengerName}
-                                    onChangeText={setPassengerName}
-                                    placeholderTextColor={colors.mutedForeground}
-                                />
-                            </View>
-                            <View style={styles.passengerInputWrapper}>
-                                <Phone size={16} color={colors.mutedForeground} />
-                                <TextInput
-                                    style={styles.passengerInput}
-                                    placeholder="Contact Number"
-                                    value={passengerPhone}
-                                    onChangeText={setPassengerPhone}
-                                    keyboardType="phone-pad"
-                                    placeholderTextColor={colors.mutedForeground}
-                                />
-                            </View>
-                            <Text style={styles.passengerNote}>
-                                Ride details will be shared with this contact
-                            </Text>
-                        </View>
-                    )}
-                </Animated.View>
 
                 {/* ─── Book Bird Button ─── */}
                 {/* ─── Book Bird Button ─── */}
@@ -1413,55 +1364,7 @@ const styles = StyleSheet.create({
     },
 
     // ─── Book for Others ───
-    forOtherCard: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: colors.border,
-        marginBottom: 16,
-    },
-    forOtherHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    forOtherLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    forOtherTitle: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: colors.foreground,
-    },
-    passengerFields: {
-        marginTop: 14,
-        gap: 10,
-    },
-    passengerInputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f8fafc',
-        borderRadius: 12,
-        paddingHorizontal: 14,
-        height: 48,
-        borderWidth: 1,
-        borderColor: colors.border,
-        gap: 10,
-    },
-    passengerInput: {
-        flex: 1,
-        fontSize: 15,
-        color: colors.foreground,
-    },
-    passengerNote: {
-        fontSize: 11,
-        color: colors.mutedForeground,
-        paddingLeft: 4,
-        fontStyle: 'italic',
-    },
+
 
     // ─── Book Button ───
     bookButton: {
