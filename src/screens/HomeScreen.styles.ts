@@ -470,4 +470,42 @@ export const styles = StyleSheet.create({
     addStopText: { fontSize: 12, color: colors.primary, fontWeight: 'bold', marginLeft: 6 },
     optimizeBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#eef2ff', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
     optimizeText: { fontSize: 11, color: colors.primary, fontWeight: 'bold', marginLeft: 6 },
+    // Quick Select
+    quickSelectLayer: {
+        flexDirection: 'row',
+        marginTop: 12,
+        marginBottom: 8,
+    },
+    gpsChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: colors.primary,
+        marginRight: 8,
+        gap: 6,
+    },
+    gpsChipText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: colors.primary,
+    },
+    verbiportChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#f3f4f6',
+        marginRight: 8,
+        gap: 6,
+    },
+    verbiportChipText: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: colors.foreground,
+    },
 });

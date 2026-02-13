@@ -5,7 +5,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { Activity, ShieldAlert, Lock, Unlock, Droplet, Wrench } from 'lucide-react-native';
 import AppMap from '../components/AppMap';
-import { getCoordinatesForStation, getBirdLocation } from '../utils/mapUtils';
+import { getCoordinatesForVerbiport, getBirdLocation } from '../utils/mapUtils';
 import client from '../api/client';
 import { styles } from './RideInProgressScreen.styles';
 
@@ -92,8 +92,8 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
                 <View style={styles.routeContainer}>
                     <AppMap
                         style={StyleSheet.absoluteFillObject}
-                        routeStart={bookingDetails?.fromCoords || (bookingDetails?.fromLocation ? getCoordinatesForStation({ name: bookingDetails.fromLocation }) : undefined)}
-                        routeEnd={bookingDetails?.toCoords || (bookingDetails?.toLocation ? getCoordinatesForStation({ name: bookingDetails.toLocation }) : undefined)}
+                        routeStart={bookingDetails?.fromCoords || (bookingDetails?.fromLocation ? getCoordinatesForVerbiport({ name: bookingDetails.fromLocation }) : undefined)}
+                        routeEnd={bookingDetails?.toCoords || (bookingDetails?.toLocation ? getCoordinatesForVerbiport({ name: bookingDetails.toLocation }) : undefined)}
                         birds={bookingDetails?.birdId ? [{ ...bookingDetails.birdId, currentLocation: getBirdLocation(bookingDetails.birdId), status: 'active' }] : []}
                         showUserLocation={true}
                     />

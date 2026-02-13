@@ -10,8 +10,14 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 const authRoutes = require('./src/routes/auth');
 const bookingRoutes = require('./src/routes/bookings');
 const userRoutes = require('./src/routes/users');
-const stationRoutes = require('./src/routes/stations');
+const verbiportRoutes = require('./src/routes/vertiports');
 const birdRoutes = require('./src/routes/birds');
+
+const User = require('./src/models/User');
+const Pilot = require('./src/models/Pilot');
+const Bird = require('./src/models/Bird');
+const Verbiport = require('./src/models/Vertiport');
+const Booking = require('./src/models/Booking');
 
 const app = express();
 
@@ -23,12 +29,42 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/stations', stationRoutes);
+app.use('/api/verbiports', verbiportRoutes);
 app.use('/api/birds', birdRoutes);
 console.log("mongodb uri: ", process.env.MONGODB_URI);
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ MongoDB Connected Successfuly'))
+    .then(async () => {
+        console.log('✅ MongoDB Connected Successfuly');
+
+        try {
+            console.log('\n--- FETCHING ALL DB DATA ---');
+
+            const users = await User.find({});
+            console.log('\n--- USERS ---');
+            console.log(JSON.stringify(users, null, 2));
+
+            const pilots = await Pilot.find({});
+            console.log('\n--- PILOTS ---');
+            console.log(JSON.stringify(pilots, null, 2));
+
+            const birds = await Bird.find({});
+            console.log('\n--- BIRDS ---');
+            console.log(JSON.stringify(birds, null, 2));
+
+            const verbiports = await Verbiport.find({});
+            console.log('\n--- VERBIPORTS ---');
+            console.log(JSON.stringify(verbiports, null, 2));
+
+            const bookings = await Booking.find({});
+            console.log('\n--- BOOKINGS ---');
+            console.log(JSON.stringify(bookings, null, 2));
+
+            console.log('\n--- END OF DB DATA ---\n');
+        } catch (e) {
+            console.error('Error fetching initial data:', e);
+        }
+    })
     .catch(err => {
         console.error('❌ MongoDB Connection Error:', err.message);
         console.log('\n--- TROUBLESHOOTING ---');

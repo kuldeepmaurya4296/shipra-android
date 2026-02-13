@@ -80,16 +80,16 @@ export default function BookingScreen({ route, navigation }: Props) {
                     );
                 }
             }
-            // Strategy 2: Fallback to stations (Legacy)
+            // Strategy 2: Fallback to verbiports
             else {
                 try {
-                    const stationsRes = await client.get('/stations');
-                    const fromStation = stationsRes.data.find((s: any) => s.name === from);
-                    const toStation = stationsRes.data.find((s: any) => s.name === to);
+                    const verbiportsRes = await client.get('/verbiports');
+                    const fromVerbiport = verbiportsRes.data.find((s: any) => s.name === from);
+                    const toVerbiport = verbiportsRes.data.find((s: any) => s.name === to);
 
-                    if (fromStation?.location && toStation?.location) {
-                        finalFrom = { latitude: fromStation.location.lat, longitude: fromStation.location.lng };
-                        finalTo = { latitude: toStation.location.lat, longitude: toStation.location.lng };
+                    if (fromVerbiport?.location && toVerbiport?.location) {
+                        finalFrom = { latitude: fromVerbiport.location.lat, longitude: fromVerbiport.location.lng };
+                        finalTo = { latitude: toVerbiport.location.lat, longitude: toVerbiport.location.lng };
                         setFromCoord(finalFrom);
                         setToCoord(finalTo);
 
@@ -99,7 +99,7 @@ export default function BookingScreen({ route, navigation }: Props) {
                         );
                     }
                 } catch (e) {
-                    console.warn('Station fallback failed', e);
+                    console.warn('Verbiport fallback failed', e);
                 }
             }
 
@@ -334,7 +334,7 @@ export default function BookingScreen({ route, navigation }: Props) {
                             routeEnd={toCoord}
                             waypoints={stops ? stops.map((s: any) => s.coords) : []}
                             birds={assignedBird ? [{ ...assignedBird, currentLocation: getBirdLocation(assignedBird) }] : []}
-                            stations={[]}
+                            verbiports={[]}
                         />
                     ) : (
                         <View style={styles.mapLoading}>

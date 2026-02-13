@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const StationSchema = new mongoose.Schema({
+const VerbiportSchema = new mongoose.Schema({
     name: { type: String, required: true },
     code: { type: String, required: true, unique: true },
     city: { type: String, required: true },
@@ -12,4 +12,4 @@ const StationSchema = new mongoose.Schema({
     active: { type: Boolean, default: true }
 });
 
-module.exports = mongoose.model('Station', StationSchema);
+module.exports = mongoose.model('Verbiport', VerbiportSchema);

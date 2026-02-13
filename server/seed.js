@@ -4,7 +4,7 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 
 // Models
-const Station = require('./src/models/Station');
+const Verbiport = require('./src/models/Vertiport');
 const Bird = require('./src/models/Bird');
 const User = require('./src/models/User');
 const Booking = require('./src/models/Booking');
@@ -12,14 +12,14 @@ const Booking = require('./src/models/Booking');
 // Config
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const stations = [
+const verbiports = [
     { name: 'Bhopal Central', code: 'BHO', city: 'Bhopal', country: 'India', location: { lat: 23.2599, lng: 77.4126 } },
     { name: 'Indore Junction', code: 'IDR', city: 'Indore', country: 'India', location: { lat: 22.7196, lng: 75.8577 } },
     { name: 'Ujjain Mahakal', code: 'UJJ', city: 'Ujjain', country: 'India', location: { lat: 23.1765, lng: 75.7885 } },
     { name: 'Rewa City', code: 'REW', city: 'Rewa', country: 'India', location: { lat: 24.5362, lng: 81.3037 } },
     { name: 'Satna Main', code: 'STA', city: 'Satna', country: 'India', location: { lat: 24.6005, lng: 80.8322 } },
     { name: 'Vidisha Town', code: 'BHS', city: 'Vidisha', country: 'India', location: { lat: 23.5256, lng: 77.8081 } },
-    { name: 'Sehore Station', code: 'SEH', city: 'Sehore', country: 'India', location: { lat: 23.2030, lng: 77.0844 } },
+    { name: 'Sehore Verbiport', code: 'SEH', city: 'Sehore', country: 'India', location: { lat: 23.2030, lng: 77.0844 } },
     { name: 'Hoshangabad Ghat', code: 'HBD', city: 'Narmadapuram', country: 'India', location: { lat: 22.7516, lng: 77.7294 } },
     { name: 'Delhi Terminal 3', code: 'DEL', city: 'Delhi', country: 'India', location: { lat: 28.5562, lng: 77.1000 } },
     { name: 'Mumbai International', code: 'BOM', city: 'Mumbai', country: 'India', location: { lat: 19.0896, lng: 72.8656 } },
@@ -51,14 +51,14 @@ const seedDB = async () => {
 
         // Clear existing data (optional, be careful in production!)
         console.log('🧹 Clearing existing data...');
-        await Station.deleteMany({});
+        await Verbiport.deleteMany({});
         await Bird.deleteMany({});
         // await User.deleteMany({}); // Keeping users intact for now
         // await Booking.deleteMany({}); // Keeping bookings intact 
 
-        // Seed Stations
-        console.log('🏗 Seeding Stations...');
-        await Station.insertMany(stations);
+        // Seed Verbiports
+        console.log('🏗 Seeding Verbiports...');
+        await Verbiport.insertMany(verbiports);
 
         // Seed Birds
         console.log('🦅 Seeding Birds...');

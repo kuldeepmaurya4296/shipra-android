@@ -4,11 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const client = axios.create({
     baseURL: API_URL,
-    timeout: 600000, // 60 second timeout for slow backend operations
+    timeout: 30000, // 30 second timeout
     headers: {
         'Content-Type': 'application/json',
     },
 });
+
+console.log('[API Client] Initialized with baseURL:', API_URL);
 
 // Add a request interceptor to add the auth token to every request
 client.interceptors.request.use(

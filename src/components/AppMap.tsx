@@ -9,7 +9,7 @@ interface Coordinates {
     longitude: number;
 }
 
-interface Station {
+interface Verbiport {
     _id: string;
     name: string;
     city: string;
@@ -27,7 +27,7 @@ interface Bird {
 }
 
 interface AppMapProps {
-    stations?: Station[];
+    verbiports?: Verbiport[];
     birds?: Bird[];
     showUserLocation?: boolean;
     routeStart?: Coordinates;
@@ -36,6 +36,7 @@ interface AppMapProps {
     style?: any;
     interactive?: boolean;
     onLocationUpdate?: (coords: Coordinates) => void;
+    onMapPress?: (coords: Coordinates) => void;
 }
 
 const LEAFLET_HTML = `
@@ -67,8 +68,18 @@ const LEAFLET_HTML = `
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
+        map.on('click', function(e) {
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ 
+                    type: 'MAP_CLICK', 
+                    latitude: e.latlng.lat, 
+                    longitude: e.latlng.lng 
+                }));
+            }
+        });
+
         var markers = {
-            stations: [],
+            verbiports: [],
             birds: [],
             waypoints: [],
             user: null,
@@ -78,7 +89,7 @@ const LEAFLET_HTML = `
         var routePolyline = null;
 
         // Icons
-        var stationIcon = L.divIcon({
+        var verbiportIcon = L.divIcon({
             className: 'custom-icon',
             html: '<div style="background-color: #4f46e5; width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
             iconSize: [14, 14],
@@ -126,9 +137,9 @@ const LEAFLET_HTML = `
                 var payload = JSON.parse(data);
                 
                 // Clear existing markers
-                markers.stations.forEach(m => map.removeLayer(m));
+                markers.verbiports.forEach(m => map.removeLayer(m));
                 markers.birds.forEach(m => map.removeLayer(m));
-                markers.stations = [];
+                markers.verbiports = [];
                 markers.birds = [];
                 
                 if (markers.user) map.removeLayer(markers.user);
@@ -143,14 +154,14 @@ const LEAFLET_HTML = `
                     markers.user = L.marker([payload.userLocation.latitude, payload.userLocation.longitude], {icon: userIcon, zIndexOffset: 1000}).addTo(map);
                 }
 
-                // Add Stations
-                if (payload.stations) {
-                    payload.stations.forEach(st => {
-                        if (st.latitude && st.longitude) {
-                            var m = L.marker([st.latitude, st.longitude], {icon: stationIcon})
-                                .bindPopup("<b>" + st.name + "</b><br>" + st.city)
+                // Add Verbiports
+                if (payload.verbiports) {
+                    payload.verbiports.forEach(vp => {
+                        if (vp.latitude && vp.longitude) {
+                            var m = L.marker([vp.latitude, vp.longitude], {icon: verbiportIcon})
+                                .bindPopup("<b>" + vp.name + "</b><br>" + vp.city)
                                 .addTo(map);
-                            markers.stations.push(m);
+                            markers.verbiports.push(m);
                         }
                     });
                 }
@@ -235,7 +246,7 @@ const LEAFLET_HTML = `
 </html>
 `;
 
-export default function AppMap({ stations = [], birds = [], showUserLocation = true, routeStart, routeEnd, waypoints = [], style, onLocationUpdate }: AppMapProps) {
+export default function AppMap({ verbiports = [], birds = [], showUserLocation = true, routeStart, routeEnd, waypoints = [], style, onLocationUpdate, onMapPress }: AppMapProps) {
     const webViewRef = useRef<WebView>(null);
     const [userLoc, setUserLoc] = useState<Coordinates | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
@@ -302,7 +313,7 @@ export default function AppMap({ stations = [], birds = [], showUserLocation = t
     useEffect(() => {
         if (isMapReady && webViewRef.current) {
             const payload = {
-                stations,
+                verbiports,
                 birds,
                 userLocation: userLoc,
                 routeStart,
@@ -314,7 +325,7 @@ export default function AppMap({ stations = [], birds = [], showUserLocation = t
         if (userLoc && onLocationUpdate) {
             onLocationUpdate(userLoc);
         }
-    }, [stations, birds, userLoc, routeStart, routeEnd, isMapReady, onLocationUpdate]);
+    }, [verbiports, birds, userLoc, routeStart, routeEnd, isMapReady, onLocationUpdate]);
 
     return (
         <View style={[styles.container, style]}>
@@ -323,8 +334,18 @@ export default function AppMap({ stations = [], birds = [], showUserLocation = t
                 originWhitelist={['*']}
                 source={{ html: LEAFLET_HTML }}
                 onMessage={(event) => {
-                    if (event.nativeEvent.data === "READY") {
+                    const data = event.nativeEvent.data;
+                    if (data === "READY") {
                         setIsMapReady(true);
+                        return;
+                    }
+                    try {
+                        const payload = JSON.parse(data);
+                        if (payload.type === 'MAP_CLICK' && onMapPress) {
+                            onMapPress({ latitude: payload.latitude, longitude: payload.longitude });
+                        }
+                    } catch (e) {
+                        // console.warn('JSON Parse error', e); 
                     }
                 }}
                 style={{ flex: 1 }}

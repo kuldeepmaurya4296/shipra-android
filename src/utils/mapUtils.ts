@@ -11,15 +11,15 @@ export const KNOWN_LOCATIONS: Record<string, { latitude: number; longitude: numb
     'Raisen': { latitude: 23.3347, longitude: 77.7918 },
 };
 
-export const getCoordinatesForStation = (station: any) => {
-    if (station.latitude && station.longitude) {
-        return { latitude: station.latitude, longitude: station.longitude };
+export const getCoordinatesForVerbiport = (verbiport: any) => {
+    if (verbiport.latitude && verbiport.longitude) {
+        return { latitude: verbiport.latitude, longitude: verbiport.longitude };
     }
-    if (station.location && station.location.lat && station.location.lng) {
-        return { latitude: station.location.lat, longitude: station.location.lng };
+    if (verbiport.location && verbiport.location.lat && verbiport.location.lng) {
+        return { latitude: verbiport.location.lat, longitude: verbiport.location.lng };
     }
     // Fallback based on name/city
-    const key = station.name || station.city;
+    const key = verbiport.name || verbiport.city;
     if (KNOWN_LOCATIONS[key]) {
         return KNOWN_LOCATIONS[key];
     }

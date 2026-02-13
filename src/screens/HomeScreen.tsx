@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView, Animated,
     TextInput, Alert, Dimensions, Image, ActivityIndicator, Platform,
-    PermissionsAndroid, StatusBar,
+    PermissionsAndroid, StatusBar, Modal, FlatList,
 } from 'react-native';
 import {
     MapPin, Search, LocateFixed,
@@ -23,6 +23,7 @@ import { RootStackParamList } from '../../App';
 import NavigationBar from '../components/NavigationBar';
 import client from '../api/client';
 import { styles } from './HomeScreen.styles';
+import { API_URL } from '@env';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
@@ -32,6 +33,14 @@ export default function HomeScreen({ navigation }: Props) {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
     const pulseAnim = useRef(new Animated.Value(1)).current;
+
+    // ─── Search Modal State ───
+    const [searchModalVisible, setSearchModalVisible] = useState(false);
+    const [searchType, setSearchType] = useState<'pickup' | 'drop' | 'stop' | null>(null);
+    const [activeStopIndex, setActiveStopIndex] = useState<number | null>(null);
+    const [searchText, setSearchText] = useState('');
+    const [suggestions, setSuggestions] = useState<GeocodedAddress[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
 
     // ─── Pickup State ───
     const [pickupAddress, setPickupAddress] = useState<string>('');
@@ -64,6 +73,8 @@ export default function HomeScreen({ navigation }: Props) {
     const [birdsForMap, setBirdsForMap] = useState<any[]>([]);
     const [nearestBird, setNearestBird] = useState<any>(null);
     const [loadingBirds, setLoadingBirds] = useState(true);
+    const [verbiports, setVerbiports] = useState<any[]>([]);
+    const [loadingVerbiports, setLoadingVerbiports] = useState(true);
 
     // ─── Search debounce ───
     const pickupSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,16 +212,68 @@ export default function HomeScreen({ navigation }: Props) {
     // ═══════════════════════════════════
     // STEP 2: Fetch Birds
     // ═══════════════════════════════════
-    const fetchBirds = useCallback(async () => {
+    const fetchBirds = useCallback(async (retryCount = 0) => {
         try {
             const response = await client.get('/birds');
-            setBirds(response.data);
-        } catch (error) {
-            console.error('[Birds] Failed to fetch:', error);
+            const fetchedBirds = response.data;
+            setBirds(fetchedBirds);
+
+            if (!pickupCoords) {
+                const fallbackBirds = fetchedBirds.slice(0, 5).map((b: any) => ({
+                    ...b,
+                    currentLocation: getBirdLocation(b),
+                    status: b.status || 'Active'
+                }));
+                setBirdsForMap(fallbackBirds);
+                return;
+            }
+
+            const processedBirds = fetchedBirds.map((b: any) => {
+                const loc = getBirdLocation(b);
+                const dist = getAirDistanceKm(
+                    pickupCoords.latitude,
+                    pickupCoords.longitude,
+                    loc.latitude,
+                    loc.longitude
+                );
+                return {
+                    ...b,
+                    currentLocation: loc,
+                    distFromPickup: parseFloat(dist.toFixed(1)),
+                    status: b.status || 'Active'
+                };
+            });
+
+            const nearbyBirds = processedBirds.filter((b: any) => b.distFromPickup <= 30);
+            nearbyBirds.sort((a: any, b: any) => a.distFromPickup - b.distFromPickup);
+            setBirdsForMap(nearbyBirds);
+            setNearestBird(nearbyBirds.length > 0 ? nearbyBirds[0] : null);
+        } catch (error: any) {
+            console.error('[Birds] Failed to fetch:', error.message);
+            if (retryCount < 2) {
+                setTimeout(() => fetchBirds(retryCount + 1), 3000);
+            }
         } finally {
             setLoadingBirds(false);
         }
-    }, []);
+    }, [pickupCoords]);
+
+    const fetchVerbiports = useCallback(async (retryCount = 0) => {
+        try {
+            console.log(`[Verbiports] Fetching from: ${API_URL}/verbiports (Attempt ${retryCount + 1})`);
+            const response = await client.get('/verbiports');
+            setVerbiports(response.data);
+            console.log(`[Verbiports] Successfully fetched ${response.data.length} verbiports`);
+        } catch (error: any) {
+            console.error('[Verbiports] Failed to fetch:', error.message);
+            if (retryCount < 2) {
+                console.log('[Verbiports] Retrying in 2 seconds...');
+                setTimeout(() => fetchVerbiports(retryCount + 1), 2000);
+            }
+        } finally {
+            setLoadingVerbiports(false);
+        }
+    }, [API_URL]);
 
     useEffect(() => {
         Animated.parallel([
@@ -227,6 +290,7 @@ export default function HomeScreen({ navigation }: Props) {
         ).start();
 
         fetchBirds();
+        fetchVerbiports();
         const interval = setInterval(fetchBirds, 15000);
         return () => clearInterval(interval);
     }, []);
@@ -314,27 +378,140 @@ export default function HomeScreen({ navigation }: Props) {
     const handlePickupSearch = (text: string) => {
         setPickupSearchText(text);
         if (pickupSearchTimeout.current) clearTimeout(pickupSearchTimeout.current);
+
+        // Check if input is "latitude, longitude" or "latitude longitude"
+        const coordMatch = text.match(/^([-+]?\d{1,3}\.?\d*)[,\s]+([-+]?\d{1,3}\.?\d*)$/);
+        if (coordMatch) {
+            const lat = parseFloat(coordMatch[1]);
+            const lng = parseFloat(coordMatch[2]);
+            if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+                // Show immediate coordinate suggestion
+                const coordSuggestion = {
+                    shortName: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+                    displayName: `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+                    latitude: lat,
+                    longitude: lng,
+                    city: 'Custom Point',
+                    state: ''
+                };
+                setPickupSuggestions([coordSuggestion]);
+
+                // Try to get address if network available
+                pickupSearchTimeout.current = setTimeout(async () => {
+                    const result = await reverseGeocode(lat, lng);
+                    if (result) {
+                        setPickupSuggestions([result]);
+                    }
+                }, 800);
+                return;
+            }
+        }
+
+        // Filter verbiports locally first
+        if (text.length > 0) {
+            const matchedVerbiports = verbiports.filter(s =>
+                s.name.toLowerCase().includes(text.toLowerCase())
+            ).map(s => ({
+                shortName: s.name,
+                displayName: s.name,
+                latitude: s.location.lat,
+                longitude: s.location.lng,
+                city: 'Verbiport',
+                state: ''
+            }));
+
+            if (matchedVerbiports.length > 0) {
+                setPickupSuggestions(matchedVerbiports);
+            }
+        }
+
         if (text.length < 3) {
-            setPickupSuggestions([]);
+            if (text.length === 0) setPickupSuggestions([]);
             return;
         }
+
         pickupSearchTimeout.current = setTimeout(async () => {
             const results = await searchPlaces(text);
-            setPickupSuggestions(results);
+            // Combine with verbiports if not already matched
+            setPickupSuggestions(prev => {
+                const combined = [...prev];
+                results.forEach(r => {
+                    if (!combined.find(c => c.shortName === r.shortName)) {
+                        combined.push(r);
+                    }
+                });
+                return combined;
+            });
         }, 500);
     };
 
     const handleDropSearch = (text: string) => {
         setDropSearchText(text);
         if (dropSearchTimeout.current) clearTimeout(dropSearchTimeout.current);
+
+        // Check if input is "latitude, longitude" or "latitude longitude"
+        const coordMatch = text.match(/^([-+]?\d{1,3}\.?\d*)[,\s]+([-+]?\d{1,3}\.?\d*)$/);
+        if (coordMatch) {
+            const lat = parseFloat(coordMatch[1]);
+            const lng = parseFloat(coordMatch[2]);
+            if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+                // Show immediate coordinate suggestion
+                const coordSuggestion = {
+                    shortName: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+                    displayName: `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+                    latitude: lat,
+                    longitude: lng,
+                    city: 'Custom Point',
+                    state: ''
+                };
+                setDropSuggestions([coordSuggestion]);
+
+                // Try to get address if network available
+                dropSearchTimeout.current = setTimeout(async () => {
+                    const result = await reverseGeocode(lat, lng);
+                    if (result) {
+                        setDropSuggestions([result]);
+                    }
+                }, 800);
+                return;
+            }
+        }
+
+        // Filter verbiports locally first
+        if (text.length > 0) {
+            const matchedVerbiports = verbiports.filter(s =>
+                s.name.toLowerCase().includes(text.toLowerCase())
+            ).map(s => ({
+                shortName: s.name,
+                displayName: s.name,
+                latitude: s.location.lat,
+                longitude: s.location.lng,
+                city: 'Verbiport',
+                state: ''
+            }));
+
+            if (matchedVerbiports.length > 0) {
+                setDropSuggestions(matchedVerbiports);
+            }
+        }
+
         if (text.length < 3) {
-            setDropSuggestions([]);
+            if (text.length === 0) setDropSuggestions([]);
             return;
         }
+
         setIsSearchingDrop(true);
         dropSearchTimeout.current = setTimeout(async () => {
             const results = await searchPlaces(text);
-            setDropSuggestions(results);
+            setDropSuggestions(prev => {
+                const combined = [...prev];
+                results.forEach(r => {
+                    if (!combined.find(c => c.shortName === r.shortName)) {
+                        combined.push(r);
+                    }
+                });
+                return combined;
+            });
             setIsSearchingDrop(false);
         }, 500);
     };
@@ -376,6 +553,27 @@ export default function HomeScreen({ navigation }: Props) {
         setStops(newStops);
 
         if (stopSearchTimeout.current) clearTimeout(stopSearchTimeout.current);
+
+        // Check if input is "latitude, longitude"
+        const coordMatch = text.match(/^([-+]?\d{1,2}\.?\d*),\s*([-+]?\d{1,3}\.?\d*)$/);
+        if (coordMatch) {
+            const lat = parseFloat(coordMatch[1]);
+            const lng = parseFloat(coordMatch[2]);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                stopSearchTimeout.current = setTimeout(async () => {
+                    const result = await reverseGeocode(lat, lng);
+                    if (result) {
+                        setStops(prev => {
+                            const updated = [...prev];
+                            if (updated[index]) updated[index].suggestions = [result];
+                            return updated;
+                        });
+                    }
+                }, 800);
+                return;
+            }
+        }
+
         if (text.length < 3) {
             newStops[index].suggestions = [];
             setStops(newStops);
@@ -526,6 +724,135 @@ export default function HomeScreen({ navigation }: Props) {
         );
     };
 
+    // ═══════════════════════════════════
+    // SEARCH MODAL HANDLERS
+    // ═══════════════════════════════════
+
+    const handleOpenSearch = (type: 'pickup' | 'drop' | 'stop', index: number | null = null) => {
+        setSearchType(type);
+        setActiveStopIndex(index);
+        setSearchText('');
+        setSuggestions([]);
+        setSearchModalVisible(true);
+        // Pre-populate with verbiports initially?
+        // setSuggestions(verbiports.map(v => ({ ...v, shortName: v.name, displayName: v.name, latitude: v.location.lat, longitude: v.location.lng, city: 'Verbiport' })));
+    };
+
+    const handleCloseSearch = () => {
+        setSearchModalVisible(false);
+        setSearchType(null);
+        setActiveStopIndex(null);
+    };
+
+    const handleSearchInput = (text: string) => {
+        setSearchText(text);
+        if (pickupSearchTimeout.current) clearTimeout(pickupSearchTimeout.current);
+
+        // Check coordinates
+        const coordMatch = text.match(/^([-+]?\d{1,3}\.?\d*)[,\s]+([-+]?\d{1,3}\.?\d*)$/);
+        if (coordMatch) {
+            const lat = parseFloat(coordMatch[1]);
+            const lng = parseFloat(coordMatch[2]);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                setSuggestions([{
+                    shortName: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+                    displayName: `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+                    latitude: lat,
+                    longitude: lng,
+                    city: 'Custom Point',
+                    state: '',
+                    country: ''
+                }]);
+                return;
+            }
+        }
+
+        // Local Verbiports Filter
+        let localResults: GeocodedAddress[] = [];
+        if (text.length > 0) {
+            localResults = verbiports.filter(s =>
+                s.name.toLowerCase().includes(text.toLowerCase())
+            ).map(s => ({
+                shortName: s.name,
+                displayName: s.name,
+                latitude: s.location.lat,
+                longitude: s.location.lng,
+                city: 'Verbiport',
+                state: '',
+                country: 'India'
+            }));
+        }
+
+        if (text.length < 3) {
+            setSuggestions(localResults);
+            return;
+        }
+
+        setIsSearching(true);
+        pickupSearchTimeout.current = setTimeout(async () => {
+            try {
+                const results = await searchPlaces(text);
+                // Merge distinct results
+                const combined = [...localResults];
+                results.forEach(r => {
+                    if (!combined.find(c => c.shortName === r.shortName)) {
+                        combined.push(r);
+                    }
+                });
+                setSuggestions(combined);
+            } catch (e) {
+                console.warn(e);
+                setSuggestions(localResults);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500);
+    };
+
+    const handleSelectResult = (place: GeocodedAddress) => {
+        if (searchType === 'pickup') {
+            handleSelectPickup(place);
+        } else if (searchType === 'drop') {
+            handleSelectDrop(place);
+        } else if (searchType === 'stop' && activeStopIndex !== null) {
+            handleSelectStop(place, activeStopIndex);
+        }
+        handleCloseSearch();
+    };
+
+    const handleSetCurrentLocation = () => {
+        // Logic for "Use Current Location" button in modal
+        setIsLoadingPickup(true);
+        Geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                const coords = { latitude, longitude };
+                let addressName = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+                try {
+                    const address = await reverseGeocode(latitude, longitude);
+                    if (address) addressName = address.shortName;
+                } catch { }
+
+                const place: GeocodedAddress = {
+                    shortName: addressName,
+                    displayName: 'Current Location',
+                    latitude,
+                    longitude,
+                    city: 'Current Location',
+                    state: '',
+                    country: ''
+                };
+                handleSelectResult(place);
+                setIsLoadingPickup(false);
+            },
+            (error) => {
+                Alert.alert('Error', 'Could not get current location');
+                setIsLoadingPickup(false);
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+    }
+
     const handleConfirmBooking = () => {
         if (!pickupCoords) {
             Alert.alert('Pickup Required', 'Please set your pickup location.');
@@ -587,14 +914,14 @@ export default function HomeScreen({ navigation }: Props) {
                             </View>
                             <Text style={styles.locationLabel}>PICKUP</Text>
                         </View>
-                        {pickupAddress && !isEditingPickup && (
+                        {pickupAddress && (
                             <View style={styles.pickupActions}>
                                 {!isPickupFromGPS && (
                                     <TouchableOpacity style={styles.gpsBtn} onPress={handleResetToGPS}>
                                         <LocateFixed size={14} color={colors.primary} />
                                     </TouchableOpacity>
                                 )}
-                                <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditingPickup(true)}>
+                                <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenSearch('pickup')}>
                                     <Edit3 size={14} color={colors.mutedForeground} />
                                 </TouchableOpacity>
                             </View>
@@ -606,50 +933,9 @@ export default function HomeScreen({ navigation }: Props) {
                             <ActivityIndicator size="small" color={colors.primary} />
                             <Text style={styles.loadingText}>Detecting your location...</Text>
                         </View>
-                    ) : isEditingPickup ? (
-                        <View style={{ zIndex: 30 }}>
-                            <View style={styles.searchInputWrapper}>
-                                <Search size={16} color={colors.mutedForeground} />
-                                <TextInput
-                                    style={styles.searchInput}
-                                    placeholder="Search pickup location..."
-                                    value={pickupSearchText}
-                                    onChangeText={handlePickupSearch}
-                                    autoFocus
-                                    placeholderTextColor={colors.mutedForeground}
-                                />
-                                <TouchableOpacity onPress={() => { setIsEditingPickup(false); setPickupSearchText(''); setPickupSuggestions([]); }}>
-                                    <X size={18} color={colors.mutedForeground} />
-                                </TouchableOpacity>
-                            </View>
-                            {pickupSuggestions.length > 0 && (
-                                <View style={styles.suggestionsBox}>
-                                    {pickupSuggestions.map((place, index) => (
-                                        <TouchableOpacity
-                                            key={`pickup-${index}`}
-                                            style={styles.suggestionItem}
-                                            onPress={() => handleSelectPickup(place)}
-                                        >
-                                            <View style={styles.suggestionIcon}>
-                                                <MapPin size={14} color={colors.primary} />
-                                            </View>
-                                            <View style={styles.suggestionTextContainer}>
-                                                <Text style={styles.suggestionTitle} numberOfLines={1}>{place.shortName}</Text>
-                                                <Text style={styles.suggestionSub} numberOfLines={1}>{place.city}{place.state ? `, ${place.state}` : ''}</Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            )}
-                            {/* GPS Reset Button */}
-                            <TouchableOpacity style={styles.useGPSButton} onPress={handleResetToGPS}>
-                                <LocateFixed size={16} color={colors.primary} />
-                                <Text style={styles.useGPSText}>Use Current Location</Text>
-                            </TouchableOpacity>
-                        </View>
                     ) : (
                         <View>
-                            <TouchableOpacity style={styles.locationDisplay} onPress={() => setIsEditingPickup(true)}>
+                            <TouchableOpacity style={styles.locationDisplay} onPress={() => handleOpenSearch('pickup')}>
                                 <View style={styles.locationDisplayContent}>
                                     <Text style={styles.locationAddress} numberOfLines={2}>
                                         {pickupAddress || 'Tap to set pickup location'}
@@ -685,37 +971,18 @@ export default function HomeScreen({ navigation }: Props) {
                                 <View style={{ flex: 1 }}>
                                     <View style={styles.stopInputWrapper}>
                                         <MapPin size={14} color={colors.primary} />
-                                        <TextInput
-                                            style={styles.stopInput}
-                                            placeholder={`Stop ${index + 1}`}
-                                            value={stop.searchText || stop.address}
-                                            onChangeText={(text) => handleStopSearch(text, index)}
-                                        />
+                                        <TouchableOpacity
+                                            style={[styles.stopInput, { justifyContent: 'center' }]}
+                                            onPress={() => handleOpenSearch('stop', index)}
+                                        >
+                                            <Text style={{ color: stop.address ? colors.foreground : colors.mutedForeground }} numberOfLines={1}>
+                                                {stop.address || `Stop ${index + 1}`}
+                                            </Text>
+                                        </TouchableOpacity>
                                         <TouchableOpacity onPress={() => handleRemoveStop(index)}>
                                             <X size={16} color={colors.mutedForeground} />
                                         </TouchableOpacity>
                                     </View>
-
-                                    {/* Suggestions */}
-                                    {stop.suggestions.length > 0 && (
-                                        <View style={[styles.suggestionsBox, { top: 44 }]}>
-                                            {stop.suggestions.map((place, idx) => (
-                                                <TouchableOpacity
-                                                    key={`s-${index}-${idx}`}
-                                                    style={styles.suggestionItem}
-                                                    onPress={() => handleSelectStop(place, index)}
-                                                >
-                                                    <View style={styles.suggestionIcon}>
-                                                        <MapPin size={14} color={colors.primary} />
-                                                    </View>
-                                                    <View style={styles.suggestionTextContainer}>
-                                                        <Text style={styles.suggestionTitle} numberOfLines={1}>{place.shortName}</Text>
-                                                        <Text style={styles.suggestionSub} numberOfLines={1}>{place.city}</Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
-                                    )}
                                 </View>
                             </View>
                         </View>
@@ -751,60 +1018,22 @@ export default function HomeScreen({ navigation }: Props) {
                             <Text style={styles.locationLabel}>DROP</Text>
                         </View>
                         {dropAddress && (
-                            <TouchableOpacity onPress={() => { setDropAddress(''); setDropCoords(null); setShowDropSearch(true); }}>
-                                <X size={16} color={colors.mutedForeground} />
+                            <TouchableOpacity onPress={() => handleOpenSearch('drop')}>
+                                <Edit3 size={14} color={colors.mutedForeground} />
                             </TouchableOpacity>
                         )}
                     </View>
 
-                    {!dropAddress || showDropSearch ? (
-                        <View style={{ zIndex: 20 }}>
-                            <View style={styles.searchInputWrapper}>
-                                <Search size={16} color={colors.mutedForeground} />
-                                <TextInput
-                                    style={styles.searchInput}
-                                    placeholder="Where are you going?"
-                                    value={dropSearchText}
-                                    onChangeText={handleDropSearch}
-                                    autoFocus={showDropSearch}
-                                    placeholderTextColor={colors.mutedForeground}
-                                />
-                                {isSearchingDrop && <ActivityIndicator size="small" color={colors.primary} />}
-                            </View>
-                            {dropSuggestions.length > 0 && (
-                                <View style={styles.suggestionsBox}>
-                                    {dropSuggestions.map((place, index) => (
-                                        <TouchableOpacity
-                                            key={`drop-${index}`}
-                                            style={styles.suggestionItem}
-                                            onPress={() => handleSelectDrop(place)}
-                                        >
-                                            <View style={styles.suggestionIcon}>
-                                                <MapPin size={14} color={colors.accent} />
-                                            </View>
-                                            <View style={styles.suggestionTextContainer}>
-                                                <Text style={styles.suggestionTitle} numberOfLines={1}>{place.shortName}</Text>
-                                                <Text style={styles.suggestionSub} numberOfLines={1}>{place.city}{place.state ? `, ${place.state}` : ''}</Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            )}
-                            {!isPickupFromGPS && (
-                                <TouchableOpacity style={styles.useGPSButton} onPress={handleSetDropToCurrentLocation}>
-                                    <LocateFixed size={16} color={colors.primary} />
-                                    <Text style={styles.useGPSText}>Set Drop to Current Location</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    ) : (
-                        <TouchableOpacity style={styles.locationDisplay} onPress={() => setShowDropSearch(true)}>
+                    <View>
+                        <TouchableOpacity style={styles.locationDisplay} onPress={() => handleOpenSearch('drop')}>
                             <View style={styles.locationDisplayContent}>
-                                <Text style={styles.locationAddress} numberOfLines={2}>{dropAddress}</Text>
+                                <Text style={[styles.locationAddress, !dropAddress && { color: colors.mutedForeground }]} numberOfLines={2}>
+                                    {dropAddress || 'Where are you going?'}
+                                </Text>
                             </View>
                             <ChevronRight size={18} color={colors.mutedForeground} />
                         </TouchableOpacity>
-                    )}
+                    </View>
                 </Animated.View>
 
                 {/* ─── Map Visualization ─── */}
@@ -816,7 +1045,7 @@ export default function HomeScreen({ navigation }: Props) {
                         routeEnd={dropCoords || undefined}
                         waypoints={stops.map(s => s.coords).filter((c): c is { latitude: number; longitude: number } => c !== null)}
                         birds={birdsForMap}
-                        stations={[]}
+                        verbiports={[]}
                         onLocationUpdate={(coords) => {
                             // Backup strategy: if main GPS failed/is loading, use map location
                             handleMapLocationUpdate(coords);
@@ -824,6 +1053,28 @@ export default function HomeScreen({ navigation }: Props) {
                             // If already using GPS mode, keep location synced live
                             if (isPickupFromGPS && !isEditingPickup && hasReceivedGPS.current) {
                                 setPickupCoords(coords);
+                            }
+                        }}
+                        onMapPress={async (coords) => {
+                            // Reverse geocode to get address
+                            let locationName = `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`;
+                            try {
+                                const address = await reverseGeocode(coords.latitude, coords.longitude);
+                                if (address) locationName = address.shortName;
+                            } catch (e) {
+                                // keep coordinate string
+                            }
+
+                            if (isEditingPickup) {
+                                setPickupCoords(coords);
+                                setPickupAddress(locationName);
+                                setIsEditingPickup(false);
+                                setIsPickupFromGPS(false);
+                            } else {
+                                // Default to setting drop
+                                setDropCoords(coords);
+                                setDropAddress(locationName);
+                                setShowDropSearch(false);
                             }
                         }}
                     />
@@ -962,6 +1213,105 @@ export default function HomeScreen({ navigation }: Props) {
                     if (screen === 'profile') navigation.navigate('Profile');
                 }}
             />
+
+            {/* ─── Search Modal ─── */}
+            <Modal
+                visible={searchModalVisible}
+                animationType="slide"
+                transparent={false}
+                onRequestClose={handleCloseSearch}
+                statusBarTranslucent={true}
+            >
+                <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 50 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#f1f1f1' }}>
+                        <TouchableOpacity onPress={handleCloseSearch} style={{ marginRight: 12 }}>
+                            <ArrowRight size={24} color={colors.foreground} style={{ transform: [{ rotate: '180deg' }] }} />
+                        </TouchableOpacity>
+                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f4f6', borderRadius: 8, paddingHorizontal: 12, height: 44 }}>
+                            <Search size={18} color={colors.mutedForeground} />
+                            <TextInput
+                                style={{ flex: 1, marginLeft: 8, fontSize: 16, color: colors.foreground }}
+                                placeholder={searchType === 'pickup' ? "Search pickup location" : searchType === 'drop' ? "Search destination" : "Search stop"}
+                                value={searchText}
+                                onChangeText={handleSearchInput}
+                                autoFocus
+                                placeholderTextColor={colors.mutedForeground}
+                            />
+                            {searchText.length > 0 && (
+                                <TouchableOpacity onPress={() => handleSearchInput('')}>
+                                    <X size={18} color={colors.mutedForeground} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Quick Options */}
+                    {!isSearching && searchText.length === 0 && (
+                        <View>
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#f1f1f1' }} onPress={handleSetCurrentLocation}>
+                                <LocateFixed size={20} color={colors.primary} />
+                                <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '500', color: colors.primary }}>Use Current Location</Text>
+                            </TouchableOpacity>
+
+                            <Text style={{ margin: 16, marginBottom: 8, fontSize: 13, fontWeight: '600', color: colors.mutedForeground, letterSpacing: 0.5 }}>SUGGESTED VERBIPORTS</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                                {verbiports.map((s, i) => (
+                                    <TouchableOpacity
+                                        key={i}
+                                        style={styles.verbiportChip}
+                                        onPress={() => handleSelectResult({
+                                            shortName: s.name,
+                                            displayName: s.name,
+                                            latitude: s.location.lat,
+                                            longitude: s.location.lng,
+                                            city: 'Verbiport',
+                                            state: '',
+                                            country: 'India'
+                                        })}
+                                    >
+                                        <Plane size={14} color={colors.primary} />
+                                        <Text style={styles.verbiportChipText}>{s.name}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+
+                    {/* Suggestions List */}
+                    <FlatList
+                        data={suggestions}
+                        keyExtractor={(item, index) => `${index}`}
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={{ paddingBottom: 24 }}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#f9f9f9' }}
+                                onPress={() => handleSelectResult(item)}
+                            >
+                                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                    <MapPin size={16} color={colors.primary} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>{item.shortName}</Text>
+                                    <Text style={{ fontSize: 13, color: colors.mutedForeground, marginTop: 2 }}>{item.displayName || item.city}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        )}
+                        ListEmptyComponent={() => (
+                            isSearching ? (
+                                <View style={{ padding: 20, alignItems: 'center' }}>
+                                    <ActivityIndicator size="small" color={colors.primary} />
+                                    <Text style={{ marginTop: 12, color: colors.mutedForeground }}>Searching places...</Text>
+                                </View>
+                            ) : searchText.length > 2 && suggestions.length === 0 ? (
+                                <View style={{ padding: 20, alignItems: 'center' }}>
+                                    <Text style={{ color: colors.mutedForeground }}>No results found</Text>
+                                </View>
+                            ) : null
+                        )}
+                    />
+                </View>
+            </Modal>
         </View>
     );
 }

@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const Station = require('../models/Station');
+const Verbiport = require('../models/Vertiport');
 
-// Get all stations
+// Get all verbiports
 router.get('/', async (req, res) => {
     try {
-        const stations = await Station.find({ active: true });
-        res.json(stations);
+        const verbiports = await Verbiport.find({ active: true });
+        res.json(verbiports);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
