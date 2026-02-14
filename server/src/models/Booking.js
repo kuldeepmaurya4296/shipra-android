@@ -14,6 +14,16 @@ const BookingSchema = new mongoose.Schema({
         latitude: { type: Number },
         longitude: { type: Number },
     },
+    pickupVerbiport: {
+        latitude: { type: Number },
+        longitude: { type: Number },
+        name: { type: String },
+    },
+    dropVerbiport: {
+        latitude: { type: Number },
+        longitude: { type: Number },
+        name: { type: String },
+    },
     date: { type: Date, required: true },
     status: { type: String, enum: ['pending', 'confirmed', 'ongoing', 'completed', 'cancelled'], default: 'confirmed' },
     paymentId: { type: String },

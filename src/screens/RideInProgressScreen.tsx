@@ -92,8 +92,10 @@ export default function RideInProgressScreen({ navigation, route }: Props) {
                 <View style={styles.routeContainer}>
                     <AppMap
                         style={StyleSheet.absoluteFillObject}
-                        routeStart={bookingDetails?.fromCoords || (bookingDetails?.fromLocation ? getCoordinatesForVerbiport({ name: bookingDetails.fromLocation }) : undefined)}
-                        routeEnd={bookingDetails?.toCoords || (bookingDetails?.toLocation ? getCoordinatesForVerbiport({ name: bookingDetails.toLocation }) : undefined)}
+                        pickupVerbiport={bookingDetails?.pickupVerbiport}
+                        dropVerbiport={bookingDetails?.dropVerbiport}
+                        routeStart={bookingDetails?.fromCoords}
+                        routeEnd={bookingDetails?.toCoords}
                         birds={bookingDetails?.birdId ? [{ ...bookingDetails.birdId, currentLocation: getBirdLocation(bookingDetails.birdId), status: 'active' }] : []}
                         showUserLocation={true}
                     />

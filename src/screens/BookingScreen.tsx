@@ -238,7 +238,8 @@ export default function BookingScreen({ route, navigation }: Props) {
             phone: userPhone,
             whatsappNumber: userPhone,
             email: user?.email,
-
+            pickupVerbiport: pickupVerbiport,
+            dropVerbiport: dropVerbiport,
         };
 
         const tryCreate = async () => {

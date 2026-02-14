@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity, Animated, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, SafeAreaView, TouchableOpacity, Animated, StyleSheet, ActivityIndicator, Platform, PermissionsAndroid, Alert } from 'react-native';
 import { colors } from '../theme/colors';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
@@ -24,32 +24,93 @@ export default function RideStatusScreen({ navigation, route }: Props) {
 
     const watchIdRef = useRef<number | null>(null);
 
-    // Fetch booking on mount
+    // Fetch booking on mount & Poll for status changes
     useEffect(() => {
+        let active = true;
         const fetchBooking = async () => {
             try {
                 const res = await client.get(`/bookings/${bookingId}`);
-                setBooking(res.data);
+                const data = res.data;
+                if (!active) return;
+
+                setBooking(data);
+
+                // If ride is cancelled (e.g. by pilot or other), notify and return Home
+                if (data.status === 'cancelled') {
+                    Alert.alert("Ride Cancelled", "This ride has been cancelled.");
+                    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+                }
             } catch (e) {
                 console.log('[RideStatus] Fetch error:', e);
             }
         };
-        if (!initialData) fetchBooking();
-    }, [bookingId]);
+
+        fetchBooking();
+        const interval = setInterval(fetchBooking, 5000);
+
+        return () => {
+            active = false;
+            clearInterval(interval);
+        };
+    }, [bookingId, navigation]);
 
     // Track user location
     useEffect(() => {
-        watchIdRef.current = Geolocation.watchPosition(
-            (position) => {
+        const startTracking = async () => {
+            if (Platform.OS === 'android') {
+                try {
+                    const granted = await PermissionsAndroid.request(
+                        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+                    );
+                    if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+                        console.log('[RideStatus] Location permission denied');
+                        return;
+                    }
+                } catch (err) {
+                    console.warn(err);
+                }
+            }
+
+            const success = (position: any) => {
                 const coords = {
                     latitude: position.coords.latitude,
                     longitude: position.coords.longitude,
                 };
+                console.log('[RideStatus] Location update:', coords);
                 setUserLocation(coords);
-            },
-            (error) => console.log('[RideStatus] Geo error:', error),
-            { enableHighAccuracy: true, distanceFilter: 10, interval: 5000 }
-        );
+            };
+
+            const error = (err: any) => {
+                console.log('[RideStatus] Geo error:', err);
+                // Fallback: try with high accuracy false if it failed
+                Geolocation.getCurrentPosition(
+                    success,
+                    (e) => console.log('[RideStatus] Final Geo error:', e),
+                    { enableHighAccuracy: false, timeout: 15000 }
+                );
+            };
+
+            // Initial kickstart to avoid waiting for watch interval
+            Geolocation.getCurrentPosition(
+                success,
+                (e) => console.log('[RideStatus] Initial Geo error:', e),
+                { enableHighAccuracy: false, timeout: 10000 }
+            );
+
+            watchIdRef.current = Geolocation.watchPosition(
+                success,
+                error,
+                {
+                    enableHighAccuracy: true,
+                    distanceFilter: 10,
+                    interval: 2000, // Faster interval initially
+                    fastestInterval: 1000,
+                    forceRequestLocation: true
+                }
+            );
+        };
+
+        startTracking();
 
         return () => {
             if (watchIdRef.current !== null) Geolocation.clearWatch(watchIdRef.current);
@@ -58,17 +119,25 @@ export default function RideStatusScreen({ navigation, route }: Props) {
 
     // Update road route and stats
     useEffect(() => {
-        if (!userLocation || !booking?.fromCoords) return;
+        if (!userLocation || !booking) return;
 
         const updateRoute = async () => {
             try {
+                // Determine target: pickup verbiport or fromCoords
                 const pickupVP = booking.pickupVerbiport || booking.fromCoords;
-                if (!pickupVP || !userLocation) return;
+                if (!pickupVP || !userLocation) {
+                    console.log('[RideStatus] Missing data for route:', { pickupVP, userLocation });
+                    return;
+                }
+
+                console.log('[RideStatus] Calculating route to:', pickupVP.name || 'Verbiport', pickupVP.latitude, pickupVP.longitude);
 
                 const path = await getRoadRoute(userLocation, pickupVP);
 
                 if (path && path.length > 0) {
+                    console.log('[RideStatus] Road route found, points:', path.length);
                     setRoadPath(path);
+
                     // Calculate distance from path accurately
                     let totalDist = 0;
                     for (let i = 0; i < path.length - 1; i++) {
@@ -82,9 +151,11 @@ export default function RideStatusScreen({ navigation, route }: Props) {
                     }
                 } else {
                     // Fallback to straight line
+                    console.log('[RideStatus] No road route found, using straight line');
                     const dist = getAirDistanceKm(userLocation.latitude, userLocation.longitude, pickupVP.latitude, pickupVP.longitude);
                     setDistanceKm(Number(dist.toFixed(1)));
                     setTimeMins(Math.ceil((dist / 30) * 60));
+                    setRoadPath([{ latitude: userLocation.latitude, longitude: userLocation.longitude }, pickupVP]);
                 }
             } catch (err) {
                 console.error('[RideStatus] Route update error:', err);
@@ -109,6 +180,8 @@ export default function RideStatusScreen({ navigation, route }: Props) {
 
     const handleContinue = () => {
         setIsContinuing(true);
+        // Navigate to in-progress screen where status polling will take over
+        navigation.navigate('RideInProgress', { bookingId });
     };
 
     const handleCancel = useCallback(() => {
@@ -129,7 +202,7 @@ export default function RideStatusScreen({ navigation, route }: Props) {
                         style={StyleSheet.absoluteFillObject}
                         showUserLocation={true}
                         routeStart={userLocation}
-                        routeEnd={booking?.pickupVerbiport || booking?.fromCoords}
+                        pickupVerbiport={booking?.pickupVerbiport || (booking?.fromCoords ? { ...booking.fromCoords, name: 'Pickup Point' } : undefined)}
                         pickupPath={roadPath}
                         lockInteraction={false}
                     />
@@ -171,14 +244,20 @@ export default function RideStatusScreen({ navigation, route }: Props) {
 
             <View style={styles.actionContainer}>
                 <TouchableOpacity
-                    style={styles.primaryButton}
+                    style={[
+                        styles.primaryButton,
+                        booking?.status !== 'ongoing' && { opacity: 0.5, backgroundColor: '#9ca3af' }
+                    ]}
                     onPress={handleContinue}
+                    disabled={booking?.status !== 'ongoing' || isContinuing}
                 >
-                    <Text style={styles.primaryButtonText}>Continue to Bird</Text>
+                    <Text style={styles.primaryButtonText}>
+                        {booking?.status === 'ongoing' ? 'Continue to Bird' : 'Waiting for Pilot to Verify...'}
+                    </Text>
                     <ArrowRight size={20} color="#fff" />
                 </TouchableOpacity>
 
-                {!isContinuing && (
+                {!isContinuing && booking?.status !== 'ongoing' && (
                     <TouchableOpacity
                         style={styles.secondaryButton}
                         onPress={handleCancel}
