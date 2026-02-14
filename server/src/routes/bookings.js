@@ -218,4 +218,51 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
+// Update Booking (User or Pilot)
+router.patch('/:id', auth, async (req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id);
+        if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+        console.log(`[Booking Patch] ID: ${req.params.id}, User: ${req.user.id}, New Status: ${req.body.status}`);
+
+        // Authorization: User who booked OR Assigned Pilot
+        const isOwner = booking.userId && booking.userId.toString() === req.user.id;
+        const isPilot = booking.pilotId && booking.pilotId.toString() === req.user.id;
+
+        if (!isOwner && !isPilot) {
+            console.log('[Booking Patch] Auth Failed', { isOwner, isPilot });
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const { status } = req.body;
+        if (status) {
+            booking.status = status;
+
+            // Handle cancellations or completions to free up resources
+            if (status === 'cancelled' || status === 'completed') {
+                // Free Pilot
+                if (booking.pilotId) {
+                    await Pilot.findByIdAndUpdate(booking.pilotId, { status: 'active' });
+                }
+                // Free Bird
+                if (booking.birdId) {
+                    await Bird.findByIdAndUpdate(booking.birdId, { status: 'active' });
+                }
+            }
+        }
+
+        // Apply other updates if provided
+        if (req.body.otp !== undefined) booking.otp = req.body.otp;
+
+        await booking.save();
+        console.log('[Booking Patch] Success');
+        res.json(booking);
+    } catch (err) {
+        console.error('[Booking Patch] Error:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
 module.exports = router;
+
