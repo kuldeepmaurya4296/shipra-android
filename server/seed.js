@@ -8,6 +8,7 @@ const Verbiport = require('./src/models/Vertiport');
 const Bird = require('./src/models/Bird');
 const User = require('./src/models/User');
 const Booking = require('./src/models/Booking');
+const CancellationPolicy = require('./src/models/CancellationPolicy');
 
 // Config
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -33,6 +34,21 @@ const verbiports = [
     { name: 'Lucknow Metro', code: 'LKO', city: 'Lucknow', country: 'India', location: { lat: 26.7606, lng: 80.8893 } }
 ];
 
+const policy = {
+    title: 'Cancellation & Refund Policy',
+    description: 'At Shipra Air Mobility, we provide a structured refund system to balance user experience and operational efficiency. Each flight slot involves precise scheduling of eVTOL birds and verbiport windows.',
+    rules: [
+        { type: 'check', text: 'Full refund for cancellations made within 1 minute of booking.' },
+        { type: 'check', text: '50% cancellation fee applies if cancelled once user starts moving towards verbiport.' },
+        { type: 'cross', text: 'No refund if cancelled after arriving at the verbiport or after the scheduled takeoff time.' },
+        { type: 'check', text: 'Refunds will be processed back to your original payment method within 5-7 business days.' },
+        { type: 'info', text: 'Health & Safety: Cancellations due to medical emergencies require a valid certificate for full credit refund.' },
+        { type: 'info', text: 'Weather Policy: If Shipra cancels a flight due to adverse weather, you get a 100% refund or free rescheduling.' },
+        { type: 'check', text: 'Security Protocol: All cancellations are logged for security and slot management.' },
+        { type: 'check', text: 'Subscription Bonus: Shipra Plus members get 1 monthly free cancellation regardless of timing (before takeoff).' }
+    ]
+};
+
 const birds = [
     { name: 'pushpako2 x1', model: 'eVTOL-P2X1', capacity: 4, range: '400km', status: 'active', location: { lat: 23.2650, lng: 77.4150 } }, // Near Bhopal
     { name: 'pushpako2 x2', model: 'eVTOL-P2X2', capacity: 6, range: '600km', status: 'active', location: { lat: 23.2550, lng: 77.4100 } }, // Near Bhopal
@@ -53,6 +69,7 @@ const seedDB = async () => {
         console.log('🧹 Clearing existing data...');
         await Verbiport.deleteMany({});
         await Bird.deleteMany({});
+        await CancellationPolicy.deleteMany({});
         // await User.deleteMany({}); // Keeping users intact for now
         // await Booking.deleteMany({}); // Keeping bookings intact 
 
@@ -63,6 +80,10 @@ const seedDB = async () => {
         // Seed Birds
         console.log('🦅 Seeding Birds...');
         await Bird.insertMany(birds);
+
+        // Seed Policy
+        console.log('📑 Seeding Cancellation Policy...');
+        await new CancellationPolicy(policy).save();
 
         // Check if admin user exists, else create
         const adminEmail = 'admin@shipra.com';

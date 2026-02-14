@@ -12,12 +12,14 @@ const bookingRoutes = require('./src/routes/bookings');
 const userRoutes = require('./src/routes/users');
 const verbiportRoutes = require('./src/routes/vertiports');
 const birdRoutes = require('./src/routes/birds');
+const policyRoutes = require('./src/routes/policies');
 
 const User = require('./src/models/User');
 const Pilot = require('./src/models/Pilot');
 const Bird = require('./src/models/Bird');
 const Verbiport = require('./src/models/Vertiport');
 const Booking = require('./src/models/Booking');
+const CancellationPolicy = require('./src/models/CancellationPolicy');
 
 const app = express();
 
@@ -31,6 +33,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/verbiports', verbiportRoutes);
 app.use('/api/birds', birdRoutes);
+app.use('/api/policies', policyRoutes);
 console.log("mongodb uri: ", process.env.MONGODB_URI);
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)

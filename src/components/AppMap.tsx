@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { View, ActivityIndicator, ViewStyle, StyleProp, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Geolocation from 'react-native-geolocation-service';
@@ -143,10 +143,15 @@ export default function AppMap({
         }
     }, [onMapPress, onFullScreenPress]);
 
-    // Determine initial center
-    const center = routeStart || userLocation || BHOPAL_COORDS;
+    // Fallback for loading state
+    useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 5000);
+        return () => clearTimeout(timer);
+    }, []);
 
-    const htmlContent = generateMapHTML(center);
+    const initialCenter = useRef(routeStart || userLocation || BHOPAL_COORDS).current;
+
+    const htmlContent = useMemo(() => generateMapHTML(initialCenter), []);
 
     return (
         <View style={[styles.container, style]}>
@@ -165,24 +170,24 @@ export default function AppMap({
                     setTimeout(() => {
                         const mapData = {
                             type: 'UPDATE_MAP',
-                            userLocation,
+                            userLocation: userLocation || null,
                             routeStart: routeStart || null,
                             routeEnd: routeEnd || null,
                             pickupVerbiport: pickupVerbiport || null,
                             dropVerbiport: dropVerbiport || null,
                             airDistance: airDistance || 0,
-                            pickupPath,
-                            dropPath,
-                            waypoints,
+                            pickupPath: pickupPath || [],
+                            dropPath: dropPath || [],
+                            waypoints: waypoints || [],
                             lockInteraction,
-                            birds: birds.map(b => ({
+                            birds: (birds || []).map(b => ({
                                 id: b._id,
                                 name: b.name || b.model || 'Bird',
                                 lat: b.currentLocation?.latitude,
                                 lng: b.currentLocation?.longitude,
                                 status: b.status || 'active',
                             })).filter(b => b.lat && b.lng),
-                            verbiports: verbiports.map(v => ({
+                            verbiports: (verbiports || []).map(v => ({
                                 name: v.name || 'Verbiport',
                                 lat: v.latitude,
                                 lng: v.longitude,

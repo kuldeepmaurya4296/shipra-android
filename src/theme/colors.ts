@@ -12,4 +12,6 @@ export const colors = {
     surface: '#ffffff',
     border: '#e5e5e5',
     success: '#10b981', // emerald-500
+    error: '#ef4444', // red-500
+    warning: '#f59e0b', // amber-500
 };
