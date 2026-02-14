@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView, Alert,
-    ActivityIndicator, StyleSheet
+    ActivityIndicator, StyleSheet, Modal, Platform
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { RootStackParamList } from '../../App';
 import { useAuth } from '../context/AuthContext';
 import {
     ArrowLeft, Clock, CreditCard, Ruler, Zap, Plane,
-    Shield, Navigation, RefreshCw
+    Shield, Navigation, RefreshCw, X
 } from 'lucide-react-native';
 import client from '../api/client';
 import AppMap from '../components/AppMap';
@@ -46,6 +46,7 @@ export default function BookingScreen({ route, navigation }: Props) {
     const [toCoord, setToCoord] = useState<{ latitude: number; longitude: number } | null>(toCoords || null);
     const [pickupVerbiport, setPickupVerbiport] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
     const [dropVerbiport, setDropVerbiport] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
+    const [isMapFullScreen, setIsMapFullScreen] = useState(false);
 
     useEffect(() => {
         initializeBooking();
@@ -333,14 +334,16 @@ export default function BookingScreen({ route, navigation }: Props) {
                     {fromCoord && toCoord ? (
                         <AppMap
                             style={StyleSheet.absoluteFillObject}
-                            showUserLocation={true}
+                            showUserLocation={false}
                             routeStart={fromCoord}
                             routeEnd={toCoord}
                             pickupVerbiport={pickupVerbiport || undefined}
                             dropVerbiport={dropVerbiport || undefined}
                             waypoints={stops ? stops.map((s: any) => s.coords) : []}
-                            birds={assignedBird ? [{ ...assignedBird, currentLocation: getBirdLocation(assignedBird) }] : []}
+                            birds={[]}
                             verbiports={[]}
+                            onFullScreenPress={() => setIsMapFullScreen(true)}
+                            lockInteraction={true}
                         />
                     ) : (
                         <View style={styles.mapLoading}>
@@ -349,6 +352,62 @@ export default function BookingScreen({ route, navigation }: Props) {
                         </View>
                     )}
                 </View>
+
+                {/* ─── Full Screen Map Modal ─── */}
+                <Modal
+                    visible={isMapFullScreen}
+                    animationType="fade"
+                    onRequestClose={() => setIsMapFullScreen(false)}
+                >
+                    <View style={{ flex: 1, backgroundColor: '#000' }}>
+                        <AppMap
+                            style={{ flex: 1 }}
+                            showUserLocation={false}
+                            routeStart={fromCoord || undefined}
+                            routeEnd={toCoord || undefined}
+                            pickupVerbiport={pickupVerbiport || undefined}
+                            dropVerbiport={dropVerbiport || undefined}
+                            waypoints={stops ? stops.map((s: any) => s.coords) : []}
+                            birds={[]}
+                            verbiports={[]}
+                            lockInteraction={true}
+                        />
+
+                        {/* Overlay Controls */}
+                        <TouchableOpacity
+                            style={{
+                                position: 'absolute',
+                                top: Platform.OS === 'android' ? 40 : 60,
+                                left: 20,
+                                backgroundColor: 'white',
+                                padding: 12,
+                                borderRadius: 30,
+                                elevation: 5,
+                            }}
+                            onPress={() => setIsMapFullScreen(false)}
+                        >
+                            <X size={24} color={colors.foreground} />
+                        </TouchableOpacity>
+
+                        {distance > 0 && (
+                            <View style={{
+                                position: 'absolute',
+                                bottom: 30,
+                                right: 20,
+                                backgroundColor: colors.primary,
+                                paddingHorizontal: 16,
+                                paddingVertical: 10,
+                                borderRadius: 12,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 6
+                            }}>
+                                <Ruler size={14} color="#fff" />
+                                <Text style={{ color: '#fff', fontSize: 14, fontWeight: 'bold' }}>{distance} km (Air)</Text>
+                            </View>
+                        )}
+                    </View>
+                </Modal>
 
                 {/* ─── Warning Banner if Failed ─── */}
                 {bookingState === 'failed_booking' && (
