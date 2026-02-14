@@ -16,7 +16,7 @@ import {
 import client from '../api/client';
 import AppMap from '../components/AppMap';
 import { getBirdLocation } from '../utils/mapUtils';
-import { getAirDistanceKm, calculateFare, calculateTravelTime } from '../utils/locationUtils';
+import { getAirDistanceKm, calculateFare, calculateTravelTime, findNearestVerbiport } from '../utils/locationUtils';
 import { RAZORPAY_KEY_ID } from '@env';
 import RazorpayCheckout from 'react-native-razorpay';
 import { styles } from './BookingScreen.styles';
@@ -44,6 +44,8 @@ export default function BookingScreen({ route, navigation }: Props) {
     const [fare, setFare] = useState<number>(0);
     const [fromCoord, setFromCoord] = useState<{ latitude: number; longitude: number } | null>(fromCoords || null);
     const [toCoord, setToCoord] = useState<{ latitude: number; longitude: number } | null>(toCoords || null);
+    const [pickupVerbiport, setPickupVerbiport] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
+    const [dropVerbiport, setDropVerbiport] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
 
     useEffect(() => {
         initializeBooking();
@@ -59,54 +61,55 @@ export default function BookingScreen({ route, navigation }: Props) {
             let calculatedDistance = 0;
             let finalFrom = fromCoord;
             let finalTo = toCoord;
+            let vports = [];
 
-            // Strategy 1: Use provided coordinates (Air Distance)
-            if (fromCoords && toCoords) {
-                if (stops && stops.length > 0) {
-                    // Multi-stop distance
-                    let total = 0;
-                    let curr = fromCoords;
-                    stops.forEach((s: any) => {
-                        total += getAirDistanceKm(curr.latitude, curr.longitude, s.coords.latitude, s.coords.longitude);
-                        curr = s.coords;
-                    });
-                    total += getAirDistanceKm(curr.latitude, curr.longitude, toCoords.latitude, toCoords.longitude);
-                    calculatedDistance = total;
-                } else {
-                    // Direct distance
-                    calculatedDistance = getAirDistanceKm(
-                        fromCoords.latitude, fromCoords.longitude,
-                        toCoords.latitude, toCoords.longitude
-                    );
-                }
+            try {
+                const verbiportsRes = await client.get('/verbiports');
+                vports = verbiportsRes.data;
+            } catch (e) {
+                console.warn('Verbiports fetch failed', e);
             }
-            // Strategy 2: Fallback to verbiports
-            else {
-                try {
-                    const verbiportsRes = await client.get('/verbiports');
-                    const fromVerbiport = verbiportsRes.data.find((s: any) => s.name === from);
-                    const toVerbiport = verbiportsRes.data.find((s: any) => s.name === to);
 
-                    if (fromVerbiport?.location && toVerbiport?.location) {
-                        finalFrom = { latitude: fromVerbiport.location.lat, longitude: fromVerbiport.location.lng };
-                        finalTo = { latitude: toVerbiport.location.lat, longitude: toVerbiport.location.lng };
-                        setFromCoord(finalFrom);
-                        setToCoord(finalTo);
+            // Strategy: 4-Point Routing
+            if (fromCoords && toCoords && vports.length > 0) {
+                const nearestPickup = findNearestVerbiport(fromCoords, vports, 50);
+                const nearestDrop = findNearestVerbiport(toCoords, vports, 50);
 
-                        calculatedDistance = getAirDistanceKm(
-                            finalFrom.latitude, finalFrom.longitude,
-                            finalTo.latitude, finalTo.longitude
-                        );
+                if (nearestPickup && nearestDrop) {
+                    const pVP = { latitude: nearestPickup.location.lat, longitude: nearestPickup.location.lng, name: nearestPickup.name };
+                    const dVP = { latitude: nearestDrop.location.lat, longitude: nearestDrop.location.lng, name: nearestDrop.name };
+                    setPickupVerbiport(pVP);
+                    setDropVerbiport(dVP);
+
+                    // Air segment (P2 -> Stops -> P3)
+                    let totalAir = 0;
+                    let curr = pVP;
+
+                    if (stops && stops.length > 0) {
+                        stops.forEach((s: any) => {
+                            totalAir += getAirDistanceKm(curr.latitude, curr.longitude, s.coords.latitude, s.coords.longitude);
+                            curr = { ...s.coords, name: s.address };
+                        });
                     }
-                } catch (e) {
-                    console.warn('Verbiport fallback failed', e);
+
+                    totalAir += getAirDistanceKm(curr.latitude, curr.longitude, dVP.latitude, dVP.longitude);
+                    calculatedDistance = totalAir;
+
+                    // Destination for bird assignment is the pickup verbiport? No, usually bird needs to be at P1 or P2. 
+                    // Let's assume bird assignment is based on distance to pickup verbiport.
+                    finalFrom = pVP;
+                } else {
+                    // Fallback: direct air distance
+                    calculatedDistance = getAirDistanceKm(fromCoords.latitude, fromCoords.longitude, toCoords.latitude, toCoords.longitude);
                 }
+            } else if (fromCoords && toCoords) {
+                calculatedDistance = getAirDistanceKm(fromCoords.latitude, fromCoords.longitude, toCoords.latitude, toCoords.longitude);
             }
 
             if (calculatedDistance > 0) {
                 const dist = parseFloat(calculatedDistance.toFixed(2));
                 setDistance(dist);
-                setDuration(calculateTravelTime(dist));
+                setDuration(calculateTravelTime(dist) + 20); // 20 min road buffer
                 setFare(calculateFare(dist));
 
                 // Assign Bird
@@ -326,12 +329,15 @@ export default function BookingScreen({ route, navigation }: Props) {
 
             <ScrollView contentContainerStyle={styles.content}>
                 {/* ─── Map Visualization ─── */}
-                <View style={styles.mapCard}>
+                <View style={[styles.mapCard, { backgroundColor: '#f8fafc' }]}>
                     {fromCoord && toCoord ? (
                         <AppMap
                             style={StyleSheet.absoluteFillObject}
+                            showUserLocation={true}
                             routeStart={fromCoord}
                             routeEnd={toCoord}
+                            pickupVerbiport={pickupVerbiport || undefined}
+                            dropVerbiport={dropVerbiport || undefined}
                             waypoints={stops ? stops.map((s: any) => s.coords) : []}
                             birds={assignedBird ? [{ ...assignedBird, currentLocation: getBirdLocation(assignedBird) }] : []}
                             verbiports={[]}
@@ -339,6 +345,7 @@ export default function BookingScreen({ route, navigation }: Props) {
                     ) : (
                         <View style={styles.mapLoading}>
                             <ActivityIndicator size="large" color={colors.primary} />
+                            <Text style={{ marginTop: 10, color: colors.mutedForeground, fontSize: 12 }}>Calculating Route...</Text>
                         </View>
                     )}
                 </View>
@@ -403,17 +410,17 @@ export default function BookingScreen({ route, navigation }: Props) {
                     <View style={styles.divider} />
                     <View style={styles.statsContainer}>
                         <View style={styles.stat}>
-                            <Ruler size={16} color={colors.mutedForeground} />
-                            <Text style={styles.statVal}>{distance} km</Text>
+                            <Ruler size={16} color={colors.primary} />
+                            <Text style={styles.statVal}>{distance} km (Air)</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.stat}>
-                            <Clock size={16} color={colors.mutedForeground} />
+                            <Clock size={16} color={colors.primary} />
                             <Text style={styles.statVal}>{duration >= 60 ? `${Math.floor(duration / 60)}h ${duration % 60}m` : `${duration} min`}</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.stat}>
-                            <Zap size={16} color={colors.mutedForeground} />
+                            <Zap size={16} color={colors.primary} />
                             <Text style={styles.statVal}>~100 km/h</Text>
                         </View>
                     </View>

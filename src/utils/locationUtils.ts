@@ -270,3 +270,72 @@ export const optimizeRoute = (
 
     return { sortedIndices, totalDistance };
 };
+
+/**
+ * Find nearest verbiport from a given point within a radius (default 50km).
+ */
+export const findNearestVerbiport = (
+    coords: { latitude: number; longitude: number },
+    verbiports: any[],
+    radiusKm: number = 50
+): any | null => {
+    let nearest: any = null;
+    let minDist = Infinity;
+
+    verbiports.forEach(vp => {
+        const dist = getAirDistanceKm(
+            coords.latitude,
+            coords.longitude,
+            vp.location.lat,
+            vp.location.lng
+        );
+        if (dist <= radiusKm && dist < minDist) {
+            minDist = dist;
+            nearest = vp;
+        }
+    });
+
+    if (nearest) {
+        return { ...(nearest as any), distance: minDist };
+    }
+    return null;
+};
+
+/**
+ * Fetch real road route coordinates using OSRM (Open Source Routing Machine).
+ * Returns an array of [latitude, longitude] points.
+ */
+export const getRoadRoute = async (
+    start: { latitude: number; longitude: number },
+    end: { latitude: number; longitude: number }
+): Promise<Array<{ latitude: number; longitude: number }> | null> => {
+    try {
+        const response = await fetch(
+            `https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson`,
+            {
+                headers: {
+                    'User-Agent': 'ShipraFlyApp/1.0',
+                },
+            }
+        );
+
+        if (!response.ok) {
+            console.error('[RoadRoute] HTTP Error:', response.status);
+            return null;
+        }
+
+        const data = await response.json();
+        if (data.routes && data.routes.length > 0) {
+            const coordinates = data.routes[0].geometry.coordinates;
+            // OSRM returns [longitude, latitude], we need {latitude, longitude}
+            return coordinates.map((coord: [number, number]) => ({
+                latitude: coord[1],
+                longitude: coord[0],
+            }));
+        }
+        return null;
+    } catch (error) {
+        console.error('[RoadRoute] Error:', error);
+        return null;
+    }
+};

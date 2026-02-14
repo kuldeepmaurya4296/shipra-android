@@ -1,362 +1,531 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, ActivityIndicator, PermissionsAndroid, Platform } from 'react-native';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { View, ActivityIndicator, ViewStyle, StyleProp, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Geolocation from 'react-native-geolocation-service';
+import { colors } from '../theme/colors';
 import { styles } from './AppMap.styles';
 
-interface Coordinates {
+interface Coords {
     latitude: number;
     longitude: number;
 }
 
-interface Verbiport {
-    _id: string;
-    name: string;
-    city: string;
-    latitude?: number;
-    longitude?: number;
+interface VerbiportMarker extends Coords {
+    name?: string;
+    [key: string]: any;
 }
 
-interface Bird {
-    _id: string;
+interface BirdMarker {
+    _id?: string;
     name?: string;
-    currentLocation?: Coordinates;
-    status: 'active' | 'maintenance' | 'charging';
-    distance?: string;
-    eta?: string;
+    model?: string;
+    currentLocation?: Coords;
+    status?: string;
+    [key: string]: any;
 }
 
 interface AppMapProps {
-    verbiports?: Verbiport[];
-    birds?: Bird[];
+    style?: StyleProp<ViewStyle>;
     showUserLocation?: boolean;
-    routeStart?: Coordinates;
-    routeEnd?: Coordinates;
-    waypoints?: Coordinates[];
-    style?: any;
-    interactive?: boolean;
-    onLocationUpdate?: (coords: Coordinates) => void;
-    onMapPress?: (coords: Coordinates) => void;
+    routeStart?: Coords;
+    routeEnd?: Coords;
+    pickupVerbiport?: Coords & { name?: string };
+    dropVerbiport?: Coords & { name?: string };
+    airDistance?: number;
+    pickupPath?: Coords[];
+    dropPath?: Coords[];
+    waypoints?: Coords[];
+    birds?: BirdMarker[];
+    verbiports?: VerbiportMarker[];
+    onLocationUpdate?: (coords: Coords) => void;
+    onMapPress?: (coords: Coords) => void;
+    onFullScreenPress?: () => void;
+    lockInteraction?: boolean;
 }
 
-const LEAFLET_HTML = `
+const BHOPAL_COORDS = { latitude: 23.2599, longitude: 77.4126 };
+
+export default function AppMap({
+    style,
+    showUserLocation = false,
+    routeStart,
+    routeEnd,
+    pickupVerbiport,
+    dropVerbiport,
+    airDistance,
+    pickupPath = [],
+    dropPath = [],
+    waypoints = [],
+    birds = [],
+    verbiports = [],
+    onLocationUpdate,
+    onMapPress,
+    onFullScreenPress,
+    lockInteraction = false,
+}: AppMapProps) {
+    const webViewRef = useRef<WebView>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [userLocation, setUserLocation] = useState<Coords | null>(null);
+
+    // Get user location
+    useEffect(() => {
+        if (!showUserLocation) return;
+
+        const watchId = Geolocation.watchPosition(
+            (position) => {
+                const coords = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                };
+                setUserLocation(coords);
+                onLocationUpdate?.(coords);
+            },
+            (error) => {
+                console.log('[AppMap] Location error:', error.message);
+            },
+            {
+                enableHighAccuracy: true,
+                distanceFilter: 10,
+                interval: 5000,
+                fastestInterval: 2000,
+            }
+        );
+
+        return () => Geolocation.clearWatch(watchId);
+    }, [showUserLocation]);
+
+    // Send data updates to the WebView map
+    useEffect(() => {
+        if (!webViewRef.current) return;
+
+        const mapData = {
+            type: 'UPDATE_MAP',
+            userLocation,
+            routeStart: routeStart || null,
+            routeEnd: routeEnd || null,
+            pickupVerbiport: pickupVerbiport || null,
+            dropVerbiport: dropVerbiport || null,
+            airDistance: airDistance || 0,
+            pickupPath,
+            dropPath,
+            waypoints,
+            lockInteraction,
+            birds: birds.map(b => ({
+                id: b._id,
+                name: b.name || b.model || 'Bird',
+                lat: b.currentLocation?.latitude,
+                lng: b.currentLocation?.longitude,
+                status: b.status || 'active',
+            })).filter(b => b.lat && b.lng),
+            verbiports: verbiports.map(v => ({
+                name: v.name || 'Verbiport',
+                lat: v.latitude,
+                lng: v.longitude,
+            })).filter(v => v.lat && v.lng),
+        };
+
+        webViewRef.current.postMessage(JSON.stringify(mapData));
+    }, [userLocation, routeStart, routeEnd, pickupVerbiport, dropVerbiport,
+        airDistance, pickupPath, dropPath, waypoints, birds, verbiports, lockInteraction]);
+
+    const handleMessage = useCallback((event: any) => {
+        try {
+            const data = JSON.parse(event.nativeEvent.data);
+            if (data.type === 'MAP_PRESS' && onMapPress) {
+                onMapPress({ latitude: data.lat, longitude: data.lng });
+            } else if (data.type === 'MAP_READY') {
+                setIsLoading(false);
+            } else if (data.type === 'FULL_SCREEN_PRESS' && onFullScreenPress) {
+                onFullScreenPress();
+            }
+        } catch (e) {
+            // ignore parse errors
+        }
+    }, [onMapPress, onFullScreenPress]);
+
+    // Determine initial center
+    const center = routeStart || userLocation || BHOPAL_COORDS;
+
+    const htmlContent = generateMapHTML(center);
+
+    return (
+        <View style={[styles.container, style]}>
+            <WebView
+                ref={webViewRef}
+                source={{ html: htmlContent }}
+                style={{ flex: 1, backgroundColor: '#f3f4f6' }}
+                onMessage={handleMessage}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                scrollEnabled={false}
+                nestedScrollEnabled={true}
+                originWhitelist={['*']}
+                onLoadEnd={() => {
+                    // Send initial data after load
+                    setTimeout(() => {
+                        const mapData = {
+                            type: 'UPDATE_MAP',
+                            userLocation,
+                            routeStart: routeStart || null,
+                            routeEnd: routeEnd || null,
+                            pickupVerbiport: pickupVerbiport || null,
+                            dropVerbiport: dropVerbiport || null,
+                            airDistance: airDistance || 0,
+                            pickupPath,
+                            dropPath,
+                            waypoints,
+                            lockInteraction,
+                            birds: birds.map(b => ({
+                                id: b._id,
+                                name: b.name || b.model || 'Bird',
+                                lat: b.currentLocation?.latitude,
+                                lng: b.currentLocation?.longitude,
+                                status: b.status || 'active',
+                            })).filter(b => b.lat && b.lng),
+                            verbiports: verbiports.map(v => ({
+                                name: v.name || 'Verbiport',
+                                lat: v.latitude,
+                                lng: v.longitude,
+                            })).filter(v => v.lat && v.lng),
+                        };
+                        webViewRef.current?.postMessage(JSON.stringify(mapData));
+                    }, 500);
+                }}
+            />
+            {!isLoading && onFullScreenPress && (
+                <View style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: 'white',
+                            padding: 8,
+                            borderRadius: 8,
+                            elevation: 4,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.25,
+                            shadowRadius: 3.84,
+                        }}
+                        onPress={onFullScreenPress}
+                    >
+                        <View style={{ width: 24, height: 24, justifyContent: 'center', alignItems: 'center' }}>
+                            <View style={{ width: 18, height: 18, borderWidth: 2, borderColor: colors.primary, borderRadius: 2 }} />
+                            <View style={{ position: 'absolute', width: 6, height: 6, backgroundColor: 'white', top: -2, right: -2 }} />
+                            <View style={{ position: 'absolute', width: 6, height: 6, backgroundColor: 'white', bottom: -2, left: -2 }} />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+            )}
+            {isLoading && (
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            )}
+        </View>
+    );
+}
+
+function generateMapHTML(center: Coords): string {
+    return `
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body { padding: 0; margin: 0; }
-        #map { width: 100%; height: 100vh; }
-        .custom-icon {
-            text-align: center;
-            color: white;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body, #map { width: 100%; height: 100%; }
+        .user-marker {
+            width: 16px; height: 16px;
+            background: #4f46e5;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(79,70,229,0.5);
+        }
+        .user-pulse {
+            width: 40px; height: 40px;
+            background: rgba(79,70,229,0.15);
+            border-radius: 50%;
+            position: absolute;
+            top: -12px; left: -12px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .pickup-marker {
+            width: 14px; height: 14px;
+            background: #10b981;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(16,185,129,0.5);
+        }
+        .drop-marker {
+            width: 14px; height: 14px;
+            background: #ef4444;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(239,68,68,0.5);
+        }
+        .verbiport-icon {
+            width: 28px; height: 28px;
+            background: #6366f1;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
             font-weight: bold;
-            font-size: 10px;
-            line-height: 24px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .bird-icon {
+            width: 24px; height: 24px;
+            background: #f59e0b;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .waypoint-marker {
+            width: 12px; height: 12px;
+            background: #8b5cf6;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(139,92,246,0.5);
+        }
+        .vp-route-marker {
+            width: 20px; height: 20px;
+            background: #6366f1;
+            border: 3px solid #fff;
+            border-radius: 4px;
+            box-shadow: 0 0 6px rgba(99,102,241,0.5);
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <script>
-        // Initialize map
-        var map = L.map('map', { zoomControl: false }).setView([23.2599, 77.4126], 13);
-        
+        var map = L.map('map', {
+            center: [${center.latitude}, ${center.longitude}],
+            zoom: 12,
+            zoomControl: true,
+            attributionControl: false
+        });
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            maxZoom: 19
         }).addTo(map);
 
+        // Layer groups for easy clearing
+        var userLayer = L.layerGroup().addTo(map);
+        var markersLayer = L.layerGroup().addTo(map);
+        var routeLayer = L.layerGroup().addTo(map);
+        var birdsLayer = L.layerGroup().addTo(map);
+        var verbiportsLayer = L.layerGroup().addTo(map);
+
+        // Map click handler
         map.on('click', function(e) {
-            if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({ 
-                    type: 'MAP_CLICK', 
-                    latitude: e.latlng.lat, 
-                    longitude: e.latlng.lng 
-                }));
-            }
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'MAP_PRESS',
+                lat: e.latlng.lat,
+                lng: e.latlng.lng
+            }));
         });
 
-        var markers = {
-            verbiports: [],
-            birds: [],
-            waypoints: [],
-            user: null,
-            routeStart: null,
-            routeEnd: null
-        };
-        var routePolyline = null;
+        // Notify ready
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
 
-        // Icons
-        var verbiportIcon = L.divIcon({
-            className: 'custom-icon',
-            html: '<div style="background-color: #4f46e5; width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
-        });
+        // Helper: create icon
+        function createDivIcon(className, size) {
+            return L.divIcon({
+                className: '',
+                html: '<div class="' + className + '"></div>',
+                iconSize: [size, size],
+                iconAnchor: [size/2, size/2]
+            });
+        }
 
-        var birdIcon = L.divIcon({
-            className: 'custom-icon',
-            html: '<div style="background-color: #10b981; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>',
-            iconSize: [18, 18],
-            iconAnchor: [9, 9]
-        });
+        function createUserIcon() {
+            return L.divIcon({
+                className: '',
+                html: '<div style="position:relative"><div class="user-pulse"></div><div class="user-marker"></div></div>',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+        }
 
-        var userIcon = L.divIcon({
-            className: 'custom-icon',
-            html: '<div style="background-color: #3b82f6; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 2px 4px rgba(0,0,0,0.2);"></div>',
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
-        });
+        function createVerbiportIcon(name) {
+            return L.divIcon({
+                className: '',
+                html: '<div class="verbiport-icon">V</div>',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+        }
 
-        var startIcon = L.divIcon({
-            className: 'custom-icon',
-            html: '<div style="background-color: #4f46e5; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">A</div>',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
+        function createBirdIcon() {
+            return L.divIcon({
+                className: '',
+                html: '<div class="bird-icon">✈</div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
 
-        var endIcon = L.divIcon({
-            className: 'custom-icon',
-            html: '<div style="background-color: #f59e0b; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 6px rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">B</div>',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
+        var firstUpdate = true;
+        var initialRadiusSet = false;
 
-        var waypointIcon = L.divIcon({
-            className: 'custom-icon',
-            html: '<div style="background-color: #8b5cf6; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 8px;"></div>',
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
-        });
+        // Listen for data from React Native
+        document.addEventListener('message', handleMessage);
+        window.addEventListener('message', handleMessage);
 
-        // Handle updates from RN
-        window.updateMap = function(data) {
+        function handleMessage(event) {
             try {
-                var payload = JSON.parse(data);
-                
-                // Clear existing markers
-                markers.verbiports.forEach(m => map.removeLayer(m));
-                markers.birds.forEach(m => map.removeLayer(m));
-                markers.verbiports = [];
-                markers.birds = [];
-                
-                if (markers.user) map.removeLayer(markers.user);
-                if (markers.routeStart) map.removeLayer(markers.routeStart);
-                markers.waypoints.forEach(m => map.removeLayer(m));
-                markers.waypoints = [];
-                if (markers.routeEnd) map.removeLayer(markers.routeEnd);
-                if (routePolyline) map.removeLayer(routePolyline);
+                var data = JSON.parse(event.data);
+                if (data.type !== 'UPDATE_MAP') return;
 
-                // Add User Location
-                if (payload.userLocation) {
-                    markers.user = L.marker([payload.userLocation.latitude, payload.userLocation.longitude], {icon: userIcon, zIndexOffset: 1000}).addTo(map);
+                // Clear layers
+                userLayer.clearLayers();
+                markersLayer.clearLayers();
+                routeLayer.clearLayers();
+                birdsLayer.clearLayers();
+                verbiportsLayer.clearLayers();
+
+                var bounds = [];
+
+                // User location
+                if (data.userLocation) {
+                    var ul = [data.userLocation.latitude, data.userLocation.longitude];
+                    L.marker(ul, { icon: createUserIcon() })
+                        .bindPopup('Your Location')
+                        .addTo(userLayer);
+                    bounds.push(ul);
                 }
 
-                // Add Verbiports
-                if (payload.verbiports) {
-                    payload.verbiports.forEach(vp => {
-                        if (vp.latitude && vp.longitude) {
-                            var m = L.marker([vp.latitude, vp.longitude], {icon: verbiportIcon})
-                                .bindPopup("<b>" + vp.name + "</b><br>" + vp.city)
-                                .addTo(map);
-                            markers.verbiports.push(m);
+                // Route start (pickup)
+                if (data.routeStart) {
+                    var rs = [data.routeStart.latitude, data.routeStart.longitude];
+                    L.marker(rs, { icon: createDivIcon('pickup-marker', 14) })
+                        .bindPopup('Pickup')
+                        .addTo(markersLayer);
+                    bounds.push(rs);
+                }
+
+                // Route end (drop)
+                if (data.routeEnd) {
+                    var re = [data.routeEnd.latitude, data.routeEnd.longitude];
+                    L.marker(re, { icon: createDivIcon('drop-marker', 14) })
+                        .bindPopup('Drop-off')
+                        .addTo(markersLayer);
+                    bounds.push(re);
+                }
+
+                // Pickup Verbiport
+                if (data.pickupVerbiport) {
+                    var pv = [data.pickupVerbiport.latitude, data.pickupVerbiport.longitude];
+                    L.marker(pv, { icon: createDivIcon('vp-route-marker', 20) })
+                        .bindPopup('Pickup Verbiport' + (data.pickupVerbiport.name ? ': ' + data.pickupVerbiport.name : ''))
+                        .addTo(markersLayer);
+                    bounds.push(pv);
+                }
+
+                // Drop Verbiport
+                if (data.dropVerbiport) {
+                    var dv = [data.dropVerbiport.latitude, data.dropVerbiport.longitude];
+                    L.marker(dv, { icon: createDivIcon('vp-route-marker', 20) })
+                        .bindPopup('Drop Verbiport' + (data.dropVerbiport.name ? ': ' + data.dropVerbiport.name : ''))
+                        .addTo(markersLayer);
+                    bounds.push(dv);
+                }
+
+                // Waypoints
+                if (data.waypoints && data.waypoints.length > 0) {
+                    data.waypoints.forEach(function(wp, i) {
+                        if (wp) {
+                            var wl = [wp.latitude, wp.longitude];
+                            L.marker(wl, { icon: createDivIcon('waypoint-marker', 12) })
+                                .bindPopup('Stop ' + (i + 1))
+                                .addTo(markersLayer);
+                            bounds.push(wl);
                         }
                     });
                 }
 
-                // Add Birds
-                if (payload.birds) {
-                    payload.birds.forEach(bird => {
-                        if (bird.currentLocation) {
-                            var m = L.marker([bird.currentLocation.latitude, bird.currentLocation.longitude], {icon: birdIcon})
-                                .bindPopup(
-                                    "<div style='text-align:center'><b>" + (bird.name || 'Bird') + "</b>" +
-                                    (bird.distance ? "<br><span style='color:#4f46e5;font-weight:bold'>" + bird.distance + "</span>" : "") +
-                                    (bird.eta ? "<br><span style='color:#10b981'>" + bird.eta + " away</span>" : "") +
-                                    "</div>"
-                                )
-                                .addTo(map);
-                            markers.birds.push(m);
+                // Road path: Pickup to Pickup Verbiport
+                if (data.pickupPath && data.pickupPath.length > 1) {
+                    var ppCoords = data.pickupPath.map(function(p) { return [p.latitude, p.longitude]; });
+                    L.polyline(ppCoords, { color: '#10b981', weight: 4, opacity: 0.8, dashArray: '8,6' }).addTo(routeLayer);
+                }
+
+                // Air route
+                if (data.pickupVerbiport && data.dropVerbiport) {
+                    var airPath = [[data.pickupVerbiport.latitude, data.pickupVerbiport.longitude]];
+                    if (data.waypoints && data.waypoints.length > 0) {
+                        data.waypoints.forEach(function(wp) {
+                            if (wp) airPath.push([wp.latitude, wp.longitude]);
+                        });
+                    }
+                    airPath.push([data.dropVerbiport.latitude, data.dropVerbiport.longitude]);
+                    L.polyline(airPath, { color: '#4f46e5', weight: 3, opacity: 0.9 }).addTo(routeLayer);
+                } else if (data.routeStart && data.routeEnd) {
+                    L.polyline([
+                        [data.routeStart.latitude, data.routeStart.longitude],
+                        [data.routeEnd.latitude, data.routeEnd.longitude]
+                    ], { color: '#4f46e5', weight: 3, opacity: 0.7, dashArray: '10,8' }).addTo(routeLayer);
+                }
+
+                // Road path: Drop Verbiport to Drop
+                if (data.dropPath && data.dropPath.length > 1) {
+                    var dpCoords = data.dropPath.map(function(p) { return [p.latitude, p.longitude]; });
+                    L.polyline(dpCoords, { color: '#ef4444', weight: 4, opacity: 0.8, dashArray: '8,6' }).addTo(routeLayer);
+                }
+
+                // Birds
+                if (data.birds && data.birds.length > 0) {
+                    data.birds.forEach(function(bird) {
+                        if (bird.lat && bird.lng) {
+                            var bl = [bird.lat, bird.lng];
+                            L.marker(bl, { icon: createBirdIcon() })
+                                .bindPopup(bird.name + (bird.status ? ' (' + bird.status + ')' : ''))
+                                .addTo(birdsLayer);
                         }
                     });
                 }
 
-                // Route
-                var latlngs = [];
-                if (payload.routeStart) {
-                    var start = [payload.routeStart.latitude, payload.routeStart.longitude];
-                    markers.routeStart = L.marker(start, {icon: startIcon, zIndexOffset: 2000}).addTo(map);
-                    latlngs.push(start);
-                }
-
-                if (payload.waypoints && Array.isArray(payload.waypoints)) {
-                    payload.waypoints.forEach(function(wp) {
-                        if (wp && wp.latitude) {
-                            var pt = [wp.latitude, wp.longitude];
-                            var m = L.marker(pt, {icon: waypointIcon}).addTo(map);
-                            markers.waypoints.push(m);
-                            latlngs.push(pt);
+                // Verbiports
+                if (data.verbiports && data.verbiports.length > 0) {
+                    data.verbiports.forEach(function(vp) {
+                        if (vp.lat && vp.lng) {
+                            L.marker([vp.lat, vp.lng], { icon: createVerbiportIcon(vp.name) })
+                                .bindPopup(vp.name || 'Verbiport')
+                                .addTo(verbiportsLayer);
                         }
                     });
                 }
 
-                if (payload.routeEnd) {
-                    var end = [payload.routeEnd.latitude, payload.routeEnd.longitude];
-                    markers.routeEnd = L.marker(end, {icon: endIcon, zIndexOffset: 2000}).addTo(map);
-                    latlngs.push(end);
-                }
-
-                if (latlngs.length >= 2) {
-                    // Create more "aviation" style line (curved or dashed)
-                    // For now, nice thick indigo line with a glow effect
-                    routePolyline = L.polyline(latlngs, {
-                        color: '#4f46e5',
-                        weight: 6,
-                        opacity: 0.8,
-                        dashArray: '10, 10',
-                        lineCap: 'round'
-                    }).addTo(map);
-                    
-                    map.fitBounds(routePolyline.getBounds(), {padding: [50, 50]});
-                } else if (payload.userLocation) {
-                     map.setView([payload.userLocation.latitude, payload.userLocation.longitude], 12);
+                if (bounds.length > 1 && firstUpdate) {
+                    map.fitBounds(bounds, { padding: [40, 40] });
+                    firstUpdate = false;
+                } else if (bounds.length === 1 && !initialRadiusSet) {
+                    // Show 60km radius initially around user location
+                    var circle = L.circle(bounds[0], { radius: 60000 });
+                    map.fitBounds(circle.getBounds());
+                    initialRadiusSet = true;
+                    firstUpdate = false;
                 }
 
             } catch (e) {
-                // console.error(e);
+                // ignore
             }
-        };
-
-        // Listen for messages (if on Android/iOS specific webview bridge is used differently, handle it)
-        document.addEventListener("message", function(event) {
-            window.updateMap(event.data);
-        });
-        window.addEventListener("message", function(event) {
-            window.updateMap(event.data);
-        });
-
-        // Signal ready
-        if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage("READY");
         }
     </script>
 </body>
 </html>
 `;
-
-export default function AppMap({ verbiports = [], birds = [], showUserLocation = true, routeStart, routeEnd, waypoints = [], style, onLocationUpdate, onMapPress }: AppMapProps) {
-    const webViewRef = useRef<WebView>(null);
-    const [userLoc, setUserLoc] = useState<Coordinates | null>(null);
-    const [isMapReady, setIsMapReady] = useState(false);
-
-    useEffect(() => {
-        const requestLocationPermission = async () => {
-            await new Promise(resolve => setTimeout(() => resolve(true), 1000));
-            if (Platform.OS === 'android') {
-                try {
-                    const granted = await PermissionsAndroid.request(
-                        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-                        {
-                            title: "Location Permission",
-                            message: "Shipra App needs access to your location to show available birds nearby.",
-                            buttonNeutral: "Ask Me Later",
-                            buttonNegative: "Cancel",
-                            buttonPositive: "OK"
-                        }
-                    );
-                    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-                        startWatching();
-                    } else {
-                        console.log("Location permission denied");
-                    }
-                } catch (err) {
-                    console.warn(err);
-                }
-            } else {
-                // iOS handles permission via Geolocation request
-                Geolocation.requestAuthorization('whenInUse').then((res) => {
-                    if (res === 'granted') startWatching();
-                });
-            }
-        };
-
-        let watchId: number | null = null;
-
-        const startWatching = () => {
-            watchId = Geolocation.watchPosition(
-                (position) => {
-                    setUserLoc({
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    });
-                },
-                (error) => {
-                    console.log(error.code, error.message);
-                },
-                { enableHighAccuracy: true, distanceFilter: 10, interval: 5000, fastestInterval: 2000 }
-            );
-        };
-
-        if (showUserLocation) {
-            requestLocationPermission();
-        }
-
-        return () => {
-            if (watchId !== null) {
-                Geolocation.clearWatch(watchId);
-            }
-        };
-    }, [showUserLocation]);
-
-    useEffect(() => {
-        if (isMapReady && webViewRef.current) {
-            const payload = {
-                verbiports,
-                birds,
-                userLocation: userLoc,
-                routeStart,
-                routeEnd,
-                waypoints
-            };
-            webViewRef.current.postMessage(JSON.stringify(payload));
-        }
-        if (userLoc && onLocationUpdate) {
-            onLocationUpdate(userLoc);
-        }
-    }, [verbiports, birds, userLoc, routeStart, routeEnd, isMapReady, onLocationUpdate]);
-
-    return (
-        <View style={[styles.container, style]}>
-            <WebView
-                ref={webViewRef}
-                originWhitelist={['*']}
-                source={{ html: LEAFLET_HTML }}
-                onMessage={(event) => {
-                    const data = event.nativeEvent.data;
-                    if (data === "READY") {
-                        setIsMapReady(true);
-                        return;
-                    }
-                    try {
-                        const payload = JSON.parse(data);
-                        if (payload.type === 'MAP_CLICK' && onMapPress) {
-                            onMapPress({ latitude: payload.latitude, longitude: payload.longitude });
-                        }
-                    } catch (e) {
-                        // console.warn('JSON Parse error', e); 
-                    }
-                }}
-                style={{ flex: 1 }}
-                scrollEnabled={false}
-                nestedScrollEnabled={true}
-            />
-            {(!isMapReady) && (
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="small" color="#4f46e5" />
-                </View>
-            )}
-        </View>
-    );
 }

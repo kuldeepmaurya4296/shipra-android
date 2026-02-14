@@ -16,7 +16,7 @@ import AppMap from '../components/AppMap';
 import { getBirdLocation } from '../utils/mapUtils';
 import {
     reverseGeocode, searchPlaces, getAirDistanceKm, optimizeRoute,
-    calculateFare, calculateTravelTime, GeocodedAddress,
+    calculateFare, calculateTravelTime, GeocodedAddress, findNearestVerbiport, getRoadRoute
 } from '../utils/locationUtils';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
@@ -58,6 +58,15 @@ export default function HomeScreen({ navigation }: Props) {
     const [dropSuggestions, setDropSuggestions] = useState<GeocodedAddress[]>([]);
     const [isSearchingDrop, setIsSearchingDrop] = useState(false);
     const [showDropSearch, setShowDropSearch] = useState(false);
+    const [isDropFromSearch, setIsDropFromSearch] = useState(false);
+
+    // ─── Verbiport Routing State ───
+    const [pickupVerbiport, setPickupVerbiport] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
+    const [dropVerbiport, setDropVerbiport] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
+    const [pickupPath, setPickupPath] = useState<{ latitude: number; longitude: number }[]>([]);
+    const [dropPath, setDropPath] = useState<{ latitude: number; longitude: number }[]>([]);
+    const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
+    const [showNearbyVerbiports, setShowNearbyVerbiports] = useState(false);
 
     // ─── Stops State ───
     const [stops, setStops] = useState<{ id: string; address: string; coords: { latitude: number; longitude: number } | null; searchText: string; suggestions: GeocodedAddress[] }[]>([]);
@@ -75,6 +84,7 @@ export default function HomeScreen({ navigation }: Props) {
     const [loadingBirds, setLoadingBirds] = useState(true);
     const [verbiports, setVerbiports] = useState<any[]>([]);
     const [loadingVerbiports, setLoadingVerbiports] = useState(true);
+    const [isMapFullScreen, setIsMapFullScreen] = useState(false);
 
     // ─── Search debounce ───
     const pickupSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -296,32 +306,132 @@ export default function HomeScreen({ navigation }: Props) {
     }, []);
 
     // ═══════════════════════════════════
-    // STEP 3: Calculate fare when both locations set
+    // STEP 2.5: Find nearest Verbiports for routing
     // ═══════════════════════════════════
     useEffect(() => {
-        if (pickupCoords && dropCoords) {
-            let totalDist = 0;
-            let currents = pickupCoords;
-
-            const validStops = stops.filter(s => s.coords !== null);
-            validStops.forEach(stop => {
-                totalDist += getAirDistanceKm(
-                    currents.latitude, currents.longitude,
-                    stop.coords!.latitude, stop.coords!.longitude
-                );
-                currents = stop.coords!;
-            });
-
-            totalDist += getAirDistanceKm(
-                currents.latitude, currents.longitude,
-                dropCoords.latitude, dropCoords.longitude
-            );
-
-            setEstimatedDistance(parseFloat(totalDist.toFixed(1)));
-            setEstimatedFare(calculateFare(totalDist));
-            setEstimatedTime(calculateTravelTime(totalDist));
+        if (pickupCoords && verbiports.length > 0) {
+            const nearest = findNearestVerbiport(pickupCoords, verbiports, 10000);
+            if (nearest) {
+                setPickupVerbiport({
+                    latitude: nearest.location.lat,
+                    longitude: nearest.location.lng,
+                    name: nearest.name
+                });
+            } else {
+                setPickupVerbiport(null);
+            }
+        } else {
+            setPickupVerbiport(null);
         }
-    }, [pickupCoords, dropCoords, stops]);
+    }, [pickupCoords, verbiports]);
+
+    useEffect(() => {
+        if (dropCoords && verbiports.length > 0) {
+            const nearest = findNearestVerbiport(dropCoords, verbiports, 10000);
+            if (nearest) {
+                setDropVerbiport({
+                    latitude: nearest.location.lat,
+                    longitude: nearest.location.lng,
+                    name: nearest.name
+                });
+            } else {
+                setDropVerbiport(null);
+            }
+        } else {
+            setDropVerbiport(null);
+        }
+    }, [dropCoords, verbiports]);
+
+    // ═══════════════════════════════════
+    // STEP 3: Calculate fare when both locations set
+    // ═══════════════════════════════════
+    const [roadDistanceStart, setRoadDistanceStart] = useState(0);
+    const [roadDistanceEnd, setRoadDistanceEnd] = useState(0);
+
+    useEffect(() => {
+        const calculateFullRoute = async () => {
+            if (pickupCoords && dropCoords && pickupVerbiport && dropVerbiport) {
+                setIsCalculatingRoute(true);
+                try {
+                    // Fetch real road routes for stats and map
+                    const [startRoute, endRoute] = await Promise.all([
+                        getRoadRoute(pickupCoords, pickupVerbiport),
+                        getRoadRoute(dropVerbiport, dropCoords)
+                    ]);
+
+                    setPickupPath(startRoute || []);
+                    setDropPath(endRoute || []);
+
+                    // Calculate road distances (sum of segments)
+                    let d1 = 0;
+                    if (startRoute && startRoute.length > 0) {
+                        for (let i = 0; i < startRoute.length - 1; i++) {
+                            d1 += getAirDistanceKm(startRoute[i].latitude, startRoute[i].longitude, startRoute[i + 1].latitude, startRoute[i + 1].longitude);
+                        }
+                    } else {
+                        d1 = getAirDistanceKm(pickupCoords.latitude, pickupCoords.longitude, pickupVerbiport.latitude, pickupVerbiport.longitude);
+                    }
+
+                    let d4 = 0;
+                    if (endRoute && endRoute.length > 0) {
+                        for (let i = 0; i < endRoute.length - 1; i++) {
+                            d4 += getAirDistanceKm(endRoute[i].latitude, endRoute[i].longitude, endRoute[i + 1].latitude, endRoute[i + 1].longitude);
+                        }
+                    } else {
+                        d4 = getAirDistanceKm(dropVerbiport.latitude, dropVerbiport.longitude, dropCoords.latitude, dropCoords.longitude);
+                    }
+
+                    setRoadDistanceStart(parseFloat(d1.toFixed(1)));
+                    setRoadDistanceEnd(parseFloat(d4.toFixed(1)));
+
+                    // Air segment calculation (Flight)
+                    let airDist = 0;
+                    let currents = pickupVerbiport;
+
+                    const validStops = stops.filter(s => s.coords !== null);
+                    validStops.forEach(stop => {
+                        airDist += getAirDistanceKm(
+                            currents.latitude, currents.longitude,
+                            stop.coords!.latitude, stop.coords!.longitude
+                        );
+                        currents = { ...stop.coords!, name: stop.address };
+                    });
+
+                    airDist += getAirDistanceKm(
+                        currents.latitude, currents.longitude,
+                        dropVerbiport.latitude, dropVerbiport.longitude
+                    );
+
+                    setEstimatedDistance(parseFloat(airDist.toFixed(1)));
+                    setEstimatedFare(calculateFare(airDist));
+
+                    // Time estimation: Flight time + Road time (estimated @ 30km/h avg for ground)
+                    const flightTime = calculateTravelTime(airDist);
+                    const roadTime = ((d1 + d4) / 30) * 60; // km / (km/h) * 60 = minutes
+                    setEstimatedTime(Math.ceil(flightTime + roadTime + 5)); // 5 min transfer buffer
+                } catch (error) {
+                    console.error("[RouteCalc] Error:", error);
+                } finally {
+                    setIsCalculatingRoute(false);
+                }
+            } else if (pickupCoords && dropCoords) {
+                // Fallback if no verbiports found
+                const totalDist = getAirDistanceKm(pickupCoords.latitude, pickupCoords.longitude, dropCoords.latitude, dropCoords.longitude);
+                setEstimatedDistance(parseFloat(totalDist.toFixed(1)));
+                setEstimatedFare(calculateFare(totalDist));
+                setEstimatedTime(calculateTravelTime(totalDist));
+                setRoadDistanceStart(0);
+                setRoadDistanceEnd(0);
+                setPickupPath([]);
+                setDropPath([]);
+            } else {
+                setPickupPath([]);
+                setDropPath([]);
+            }
+        };
+
+        calculateFullRoute();
+    }, [pickupCoords, dropCoords, pickupVerbiport, dropVerbiport, stops]);
 
     // ═══════════════════════════════════
     // STEP 4: Calculate Nearby Birds & Map Data
@@ -528,6 +638,7 @@ export default function HomeScreen({ navigation }: Props) {
     const handleSelectDrop = (place: GeocodedAddress) => {
         setDropAddress(place.shortName);
         setDropCoords({ latitude: place.latitude, longitude: place.longitude });
+        setIsDropFromSearch(true);
         setShowDropSearch(false);
         setDropSearchText('');
         setDropSuggestions([]);
@@ -734,8 +845,7 @@ export default function HomeScreen({ navigation }: Props) {
         setSearchText('');
         setSuggestions([]);
         setSearchModalVisible(true);
-        // Pre-populate with verbiports initially?
-        // setSuggestions(verbiports.map(v => ({ ...v, shortName: v.name, displayName: v.name, latitude: v.location.lat, longitude: v.location.lng, city: 'Verbiport' })));
+        if (type === 'drop') setIsDropFromSearch(false);
     };
 
     const handleCloseSearch = () => {
@@ -1040,12 +1150,17 @@ export default function HomeScreen({ navigation }: Props) {
                 <Animated.View style={[styles.mapCard, { opacity: fadeAnim }]}>
                     <AppMap
                         style={{ ...styles.mapCard, height: '100%', marginBottom: 0, borderRadius: 0 }}
-                        showUserLocation={true}
+                        showUserLocation={!(pickupCoords && dropCoords)}
                         routeStart={pickupCoords || undefined}
                         routeEnd={dropCoords || undefined}
+                        pickupVerbiport={pickupVerbiport || undefined}
+                        dropVerbiport={dropVerbiport || undefined}
+                        airDistance={estimatedDistance}
+                        pickupPath={pickupPath}
+                        dropPath={dropPath}
                         waypoints={stops.map(s => s.coords).filter((c): c is { latitude: number; longitude: number } => c !== null)}
-                        birds={birdsForMap}
-                        verbiports={[]}
+                        birds={pickupCoords && dropCoords ? [] : birdsForMap}
+                        verbiports={pickupCoords && dropCoords ? [] : verbiports.map(v => ({ ...v, latitude: v.location.lat, longitude: v.location.lng }))}
                         onLocationUpdate={(coords) => {
                             // Backup strategy: if main GPS failed/is loading, use map location
                             handleMapLocationUpdate(coords);
@@ -1070,21 +1185,86 @@ export default function HomeScreen({ navigation }: Props) {
                                 setPickupAddress(locationName);
                                 setIsEditingPickup(false);
                                 setIsPickupFromGPS(false);
-                            } else {
-                                // Default to setting drop
+                            } else if (!isDropFromSearch) {
+                                // Default to setting drop, but only if not set from search
                                 setDropCoords(coords);
                                 setDropAddress(locationName);
                                 setShowDropSearch(false);
                             }
                         }}
+                        onFullScreenPress={() => setIsMapFullScreen(true)}
+                        lockInteraction={!!(pickupCoords && dropCoords)}
                     />
-                    {pickupCoords && dropCoords && (
+                    {isCalculatingRoute && (
+                        <View style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            backgroundColor: 'rgba(255,255,255,0.6)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 1000,
+                            borderRadius: 16
+                        }}>
+                            <ActivityIndicator size="large" color={colors.primary} />
+                            <Text style={{ marginTop: 12, fontWeight: '700', color: colors.primary }}>Calculating Optimal Route...</Text>
+                        </View>
+                    )}
+
+                    {pickupCoords && dropCoords && !isCalculatingRoute && (
                         <View style={styles.mapOverlayBadge}>
                             <Ruler size={12} color="#fff" />
-                            <Text style={styles.mapOverlayText}>{estimatedDistance} km (air)</Text>
+                            <Text style={styles.mapOverlayText}>{estimatedDistance} km (Displacement)</Text>
                         </View>
                     )}
                 </Animated.View>
+
+                {/* ─── Full Screen Map Modal ─── */}
+                <Modal
+                    visible={isMapFullScreen}
+                    animationType="fade"
+                    onRequestClose={() => setIsMapFullScreen(false)}
+                >
+                    <View style={{ flex: 1, backgroundColor: '#000' }}>
+                        <AppMap
+                            style={{ flex: 1 }}
+                            showUserLocation={!(pickupCoords && dropCoords)}
+                            routeStart={pickupCoords || undefined}
+                            routeEnd={dropCoords || undefined}
+                            pickupVerbiport={pickupVerbiport || undefined}
+                            dropVerbiport={dropVerbiport || undefined}
+                            airDistance={estimatedDistance}
+                            pickupPath={pickupPath}
+                            dropPath={dropPath}
+                            waypoints={stops.map(s => s.coords).filter((c): c is { latitude: number; longitude: number } => c !== null)}
+                            birds={pickupCoords && dropCoords ? [] : birdsForMap}
+                            verbiports={pickupCoords && dropCoords ? [] : verbiports.map(v => ({ ...v, latitude: v.location.lat, longitude: v.location.lng }))}
+                            lockInteraction={!!(pickupCoords && dropCoords)}
+                        />
+
+                        {/* Overlay Controls */}
+                        <TouchableOpacity
+                            style={{
+                                position: 'absolute',
+                                top: Platform.OS === 'android' ? 40 : 60,
+                                left: 20,
+                                backgroundColor: 'white',
+                                padding: 12,
+                                borderRadius: 30,
+                                elevation: 5,
+                            }}
+                            onPress={() => setIsMapFullScreen(false)}
+                        >
+                            <X size={24} color={colors.foreground} />
+                        </TouchableOpacity>
+
+                        {pickupCoords && dropCoords && estimatedDistance > 0 && (
+                            <View style={[styles.mapOverlayBadge, { bottom: 30, right: 20, paddingHorizontal: 16, paddingVertical: 10 }]}>
+                                <Ruler size={14} color="#fff" />
+                                <Text style={[styles.mapOverlayText, { fontSize: 14 }]}>{estimatedDistance} km (Displacement)</Text>
+                            </View>
+                        )}
+                    </View>
+                </Modal>
 
                 {/* ─── Fare Estimate Card ─── */}
                 {pickupCoords && dropCoords && estimatedDistance > 0 && (
@@ -1092,7 +1272,7 @@ export default function HomeScreen({ navigation }: Props) {
                         <View style={styles.fareHeader}>
                             <View style={styles.fareHeaderLeft}>
                                 <Plane size={20} color={colors.primary} />
-                                <Text style={styles.fareTitle}>Bird Fare Estimate</Text>
+                                <Text style={styles.fareTitle}>Travel Insights & Fare</Text>
                             </View>
                             <View style={styles.fareAmountContainer}>
                                 <Text style={styles.fareCurrency}>₹</Text>
@@ -1102,25 +1282,41 @@ export default function HomeScreen({ navigation }: Props) {
 
                         <View style={styles.fareStats}>
                             <View style={styles.fareStat}>
-                                <Ruler size={16} color={colors.primary} />
-                                <Text style={styles.fareStatValue}>{estimatedDistance} km</Text>
-                                <Text style={styles.fareStatLabel}>Air Distance</Text>
-                            </View>
-                            <View style={styles.fareStatDivider} />
-                            <View style={styles.fareStat}>
                                 <Clock size={16} color={colors.primary} />
                                 <Text style={styles.fareStatValue}>
                                     {estimatedTime >= 60
                                         ? `${Math.floor(estimatedTime / 60)}h ${estimatedTime % 60}m`
                                         : `${estimatedTime} min`}
                                 </Text>
-                                <Text style={styles.fareStatLabel}>Est. Time</Text>
+                                <Text style={styles.fareStatLabel}>Total Journey</Text>
+                            </View>
+                            <View style={styles.fareStatDivider} />
+                            <View style={styles.fareStat}>
+                                <Ruler size={16} color={colors.primary} />
+                                <Text style={styles.fareStatValue}>{estimatedDistance} km</Text>
+                                <Text style={styles.fareStatLabel}>Air Displacement</Text>
                             </View>
                             <View style={styles.fareStatDivider} />
                             <View style={styles.fareStat}>
                                 <Zap size={16} color={colors.primary} />
-                                <Text style={styles.fareStatValue}>~100</Text>
-                                <Text style={styles.fareStatLabel}>km/h Avg</Text>
+                                <Text style={styles.fareStatValue}>{(roadDistanceStart + roadDistanceEnd).toFixed(1)} km</Text>
+                                <Text style={styles.fareStatLabel}>Road Segments</Text>
+                            </View>
+                        </View>
+
+                        <View style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#f1f1f1', marginTop: 8 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.foreground, marginBottom: 8 }}>JOURNEY OVERVIEW</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.mutedForeground, marginRight: 8 }} />
+                                <Text style={{ flex: 1, fontSize: 12, color: colors.mutedForeground }}>Road to VP: <Text style={{ color: colors.foreground, fontWeight: '600' }}>{roadDistanceStart} km</Text></Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginRight: 8 }} />
+                                <Text style={{ flex: 1, fontSize: 12, color: colors.mutedForeground }}>Flight Displacement: <Text style={{ color: colors.primary, fontWeight: '600' }}>{estimatedDistance} km</Text></Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.mutedForeground, marginRight: 8 }} />
+                                <Text style={{ flex: 1, fontSize: 12, color: colors.mutedForeground }}>Road to Dest: <Text style={{ color: colors.foreground, fontWeight: '600' }}>{roadDistanceEnd} km</Text></Text>
                             </View>
                         </View>
 
@@ -1140,7 +1336,7 @@ export default function HomeScreen({ navigation }: Props) {
 
                         <View style={styles.fareNoteRow}>
                             <Shield size={12} color={colors.mutedForeground} />
-                            <Text style={styles.fareNote}>Distance is measured as straight-line (air displacement)</Text>
+                            <Text style={styles.fareNote}>Fare applies only to the air displacement segment.</Text>
                         </View>
                     </Animated.View>
                 )}
