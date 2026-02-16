@@ -16,7 +16,7 @@ import {
 import client from '../api/client';
 import AppMap from '../components/AppMap';
 import { getBirdLocation } from '../utils/mapUtils';
-import { getAirDistanceKm, calculateFare, calculateTravelTime, findNearestVerbiport } from '../utils/locationUtils';
+import { getAirDistanceKm, calculateFare, calculateTravelTime, findNearestVerbiport, getRoadRoute } from '../utils/locationUtils';
 import { RAZORPAY_KEY_ID } from '@env';
 import RazorpayCheckout from 'react-native-razorpay';
 import { styles } from './BookingScreen.styles';
@@ -46,6 +46,8 @@ export default function BookingScreen({ route, navigation }: Props) {
     const [toCoord, setToCoord] = useState<{ latitude: number; longitude: number } | null>(toCoords || null);
     const [pickupVerbiport, setPickupVerbiport] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
     const [dropVerbiport, setDropVerbiport] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
+    const [pickupPath, setPickupPath] = useState<any[]>([]);
+    const [dropPath, setDropPath] = useState<any[]>([]);
     const [isMapFullScreen, setIsMapFullScreen] = useState(false);
 
     useEffect(() => {
@@ -81,6 +83,18 @@ export default function BookingScreen({ route, navigation }: Props) {
                     const dVP = { latitude: nearestDrop.location.lat, longitude: nearestDrop.location.lng, name: nearestDrop.name };
                     setPickupVerbiport(pVP);
                     setDropVerbiport(dVP);
+
+                    // Fetch road routes for map
+                    try {
+                        const [pPath, dPath] = await Promise.all([
+                            getRoadRoute(fromCoords, pVP),
+                            getRoadRoute(dVP, toCoords)
+                        ]);
+                        setPickupPath(pPath || []);
+                        setDropPath(dPath || []);
+                    } catch (e) {
+                        console.log('Error fetching road routes:', e);
+                    }
 
                     // Air segment (P2 -> Stops -> P3)
                     let totalAir = 0;
@@ -340,6 +354,8 @@ export default function BookingScreen({ route, navigation }: Props) {
                             routeEnd={toCoord}
                             pickupVerbiport={pickupVerbiport || undefined}
                             dropVerbiport={dropVerbiport || undefined}
+                            pickupPath={pickupPath}
+                            dropPath={dropPath}
                             waypoints={stops ? stops.map((s: any) => s.coords) : []}
                             birds={[]}
                             verbiports={[]}
@@ -368,6 +384,8 @@ export default function BookingScreen({ route, navigation }: Props) {
                             routeEnd={toCoord || undefined}
                             pickupVerbiport={pickupVerbiport || undefined}
                             dropVerbiport={dropVerbiport || undefined}
+                            pickupPath={pickupPath}
+                            dropPath={dropPath}
                             waypoints={stops ? stops.map((s: any) => s.coords) : []}
                             birds={[]}
                             verbiports={[]}
@@ -379,11 +397,16 @@ export default function BookingScreen({ route, navigation }: Props) {
                             style={{
                                 position: 'absolute',
                                 top: Platform.OS === 'android' ? 40 : 60,
-                                left: 20,
+                                right: 20, // Moved to right
                                 backgroundColor: 'white',
                                 padding: 12,
                                 borderRadius: 30,
                                 elevation: 5,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.25,
+                                shadowRadius: 3.84,
+                                zIndex: 1000,
                             }}
                             onPress={() => setIsMapFullScreen(false)}
                         >

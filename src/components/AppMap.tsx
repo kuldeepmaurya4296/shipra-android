@@ -518,11 +518,11 @@ function generateMapHTML(center: Coords): string {
                     map.fitBounds(bounds, { padding: [40, 40] });
                     firstUpdate = false;
                 } else if (bounds.length === 1 && !initialRadiusSet) {
-                    // Show 60km radius initially around user location
-                    var circle = L.circle(bounds[0], { radius: 60000 });
+                    // Show 50km radius initially around user location
+                    var circle = L.circle(bounds[0], { radius: 50000 });
                     map.fitBounds(circle.getBounds());
                     initialRadiusSet = true;
-                    firstUpdate = false;
+                    // Do NOT set firstUpdate = false here, so we can zoom again when a route (2+ points) is set
                 }
 
             } catch (e) {

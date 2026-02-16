@@ -11,6 +11,7 @@ const client = axios.create({
 });
 
 console.log('[API Client] Initialized with baseURL:', API_URL);
+// Force environment refresh - Local Dev Mode
 
 // Add a request interceptor to add the auth token to every request
 client.interceptors.request.use(

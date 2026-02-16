@@ -85,6 +85,7 @@ export default function HomeScreen({ navigation }: Props) {
     const [verbiports, setVerbiports] = useState<any[]>([]);
     const [loadingVerbiports, setLoadingVerbiports] = useState(true);
     const [isMapFullScreen, setIsMapFullScreen] = useState(false);
+    const [showBirdsOnMap, setShowBirdsOnMap] = useState(false);
 
     // ─── Search debounce ───
     const pickupSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -254,7 +255,7 @@ export default function HomeScreen({ navigation }: Props) {
                 };
             });
 
-            const nearbyBirds = processedBirds.filter((b: any) => b.distFromPickup <= 30);
+            const nearbyBirds = processedBirds.filter((b: any) => b.distFromPickup <= 50);
             nearbyBirds.sort((a: any, b: any) => a.distFromPickup - b.distFromPickup);
             setBirdsForMap(nearbyBirds);
             setNearestBird(nearbyBirds.length > 0 ? nearbyBirds[0] : null);
@@ -459,8 +460,8 @@ export default function HomeScreen({ navigation }: Props) {
                 };
             });
 
-            // Filter: limit to 30km radius
-            const nearbyBirds = processedBirds.filter(b => b.distFromPickup <= 30);
+            // Filter: limit to 50km radius
+            const nearbyBirds = processedBirds.filter(b => b.distFromPickup <= 50);
 
             // Sort: nearest first
             nearbyBirds.sort((a, b) => a.distFromPickup - b.distFromPickup);
@@ -480,7 +481,7 @@ export default function HomeScreen({ navigation }: Props) {
             setBirdsForMap(fallbackBirds);
             setNearestBird(null);
         }
-    }, [pickupCoords, dropCoords, birds]);
+    }, [pickupCoords, dropCoords, birds, showBirdsOnMap]);
 
     // ═══════════════════════════════════
     // HANDLERS
@@ -1159,7 +1160,7 @@ export default function HomeScreen({ navigation }: Props) {
                         pickupPath={pickupPath}
                         dropPath={dropPath}
                         waypoints={stops.map(s => s.coords).filter((c): c is { latitude: number; longitude: number } => c !== null)}
-                        birds={pickupCoords && dropCoords ? [] : birdsForMap}
+                        birds={pickupCoords && dropCoords ? [] : (showBirdsOnMap ? birdsForMap : [])}
                         verbiports={pickupCoords && dropCoords ? [] : verbiports.map(v => ({ ...v, latitude: v.location.lat, longitude: v.location.lng }))}
                         onLocationUpdate={(coords) => {
                             // Backup strategy: if main GPS failed/is loading, use map location
@@ -1195,6 +1196,38 @@ export default function HomeScreen({ navigation }: Props) {
                         onFullScreenPress={() => setIsMapFullScreen(true)}
                         lockInteraction={!!(pickupCoords && dropCoords)}
                     />
+
+                    {!pickupCoords || !dropCoords ? (
+                        <TouchableOpacity
+                            style={{
+                                position: 'absolute',
+                                top: 12,
+                                left: 12,
+                                backgroundColor: showBirdsOnMap ? colors.primary : 'white',
+                                paddingVertical: 8,
+                                paddingHorizontal: 12,
+                                borderRadius: 20,
+                                elevation: 4,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.25,
+                                shadowRadius: 3.84,
+                            }}
+                            onPress={() => setShowBirdsOnMap(!showBirdsOnMap)}
+                        >
+                            <Plane size={14} color={showBirdsOnMap ? 'white' : colors.primary} />
+                            <Text style={{
+                                marginLeft: 6,
+                                fontSize: 12,
+                                fontWeight: '600',
+                                color: showBirdsOnMap ? 'white' : colors.primary
+                            }}>
+                                {showBirdsOnMap ? 'Hide Birds' : 'Check Nearby Birds'}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : null}
                     {isCalculatingRoute && (
                         <View style={{
                             position: 'absolute',
@@ -1236,7 +1269,7 @@ export default function HomeScreen({ navigation }: Props) {
                             pickupPath={pickupPath}
                             dropPath={dropPath}
                             waypoints={stops.map(s => s.coords).filter((c): c is { latitude: number; longitude: number } => c !== null)}
-                            birds={pickupCoords && dropCoords ? [] : birdsForMap}
+                            birds={pickupCoords && dropCoords ? [] : (showBirdsOnMap ? birdsForMap : [])}
                             verbiports={pickupCoords && dropCoords ? [] : verbiports.map(v => ({ ...v, latitude: v.location.lat, longitude: v.location.lng }))}
                             lockInteraction={!!(pickupCoords && dropCoords)}
                         />
@@ -1246,11 +1279,16 @@ export default function HomeScreen({ navigation }: Props) {
                             style={{
                                 position: 'absolute',
                                 top: Platform.OS === 'android' ? 40 : 60,
-                                left: 20,
+                                right: 20, // Moved to right to avoid overlap with zoom controls
                                 backgroundColor: 'white',
                                 padding: 12,
                                 borderRadius: 30,
                                 elevation: 5,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.25,
+                                shadowRadius: 3.84,
+                                zIndex: 1000, // Ensure it is on top
                             }}
                             onPress={() => setIsMapFullScreen(false)}
                         >
@@ -1379,7 +1417,7 @@ export default function HomeScreen({ navigation }: Props) {
                                 <Text style={styles.birdTitle}>Eco-Bird Fleet</Text>
                                 <View style={styles.badge}>
                                     <Text style={styles.badgeText}>
-                                        {birdsForMap.length} birds within 30km
+                                        {birdsForMap.length} birds within 50km
                                     </Text>
                                 </View>
                             </View>

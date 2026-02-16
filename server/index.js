@@ -43,25 +43,25 @@ mongoose.connect(process.env.MONGODB_URI)
         try {
             console.log('\n--- FETCHING ALL DB DATA ---');
 
-            const users = await User.find({});
-            console.log('\n--- USERS ---');
-            console.log(JSON.stringify(users, null, 2));
+            // const users = await User.find({});
+            // console.log('\n--- USERS ---');
+            // console.log(JSON.stringify(users, null, 2));
 
-            const pilots = await Pilot.find({});
-            console.log('\n--- PILOTS ---');
-            console.log(JSON.stringify(pilots, null, 2));
+            // const pilots = await Pilot.find({});
+            // console.log('\n--- PILOTS ---');
+            // console.log(JSON.stringify(pilots, null, 2));
 
-            const birds = await Bird.find({});
-            console.log('\n--- BIRDS ---');
-            console.log(JSON.stringify(birds, null, 2));
+            // const birds = await Bird.find({});
+            // console.log('\n--- BIRDS ---');
+            // console.log(JSON.stringify(birds, null, 2));
 
             const verbiports = await Verbiport.find({});
             console.log('\n--- VERBIPORTS ---');
             console.log(JSON.stringify(verbiports, null, 2));
 
-            const bookings = await Booking.find({});
-            console.log('\n--- BOOKINGS ---');
-            console.log(JSON.stringify(bookings, null, 2));
+            // const bookings = await Booking.find({});
+            // console.log('\n--- BOOKINGS ---');
+            // console.log(JSON.stringify(bookings, null, 2));
 
             console.log('\n--- END OF DB DATA ---\n');
         } catch (e) {
