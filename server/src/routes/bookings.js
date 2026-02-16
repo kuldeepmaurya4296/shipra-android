@@ -67,32 +67,36 @@ router.post('/', auth, async (req, res) => {
         const booking = await newBooking.save();
 
         // Send OTP Notifications
+        // Send OTP Notifications (Async - Fire and forget to prevent blocking)
         const message = `Your Shipra Booking (Ref: ${booking._id}) is confirmed! \nOTP: ${booking.otp} \nBird: ${booking.birdNumber}`;
 
-        // Email
-        if (userEmail) {
-            console.log(`[OTP] Sending Email to: ${userEmail}`);
-            try {
-                await sendEmail(userEmail, 'Booking Confirmed - Shipra', message);
-            } catch (e) {
-                console.error("Email send failed", e);
+        // fire-and-forget notifications
+        (async () => {
+            // Email
+            if (userEmail) {
+                console.log(`[OTP] Sending Email to: ${userEmail}`);
+                try {
+                    await sendEmail(userEmail, 'Booking Confirmed - Shipra', message);
+                } catch (e) {
+                    console.error("Email send failed", e);
+                }
+            } else {
+                console.log('[OTP] Skipping Email: No email available');
             }
-        } else {
-            console.log('[OTP] Skipping Email: No email available');
-        }
 
-        // WhatsApp (Use whatsappNumber from body or user profile, fallback to phone)
-        const phoneForWhatsApp = whatsappNumber || req.body.phone || user.phone;
-        if (phoneForWhatsApp) {
-            console.log(`[OTP] Sending WhatsApp to: ${phoneForWhatsApp}`);
-            try {
-                await sendWhatsApp(phoneForWhatsApp, message);
-            } catch (e) {
-                console.error("WhatsApp send failed", e);
+            // WhatsApp (Use whatsappNumber from body or user profile, fallback to phone)
+            const phoneForWhatsApp = whatsappNumber || req.body.phone || user.phone;
+            if (phoneForWhatsApp) {
+                console.log(`[OTP] Sending WhatsApp to: ${phoneForWhatsApp}`);
+                try {
+                    await sendWhatsApp(phoneForWhatsApp, message);
+                } catch (e) {
+                    console.error("WhatsApp send failed", e);
+                }
+            } else {
+                console.log('[OTP] Skipping WhatsApp: No phone number available');
             }
-        } else {
-            console.log('[OTP] Skipping WhatsApp: No phone number available');
-        }
+        })().catch(err => console.error('Notification background error:', err));
 
         res.status(201).json(booking);
     } catch (err) {
